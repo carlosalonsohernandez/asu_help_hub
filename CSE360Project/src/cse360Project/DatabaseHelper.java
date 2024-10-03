@@ -11,7 +11,7 @@ class DatabaseHelper {
 
 	// JDBC driver name and database URL 
 	static final String JDBC_DRIVER = "org.h2.Driver";   
-	static final String DB_URL = "jdbc:h2:~/firstDatabase";  
+	static final String DB_URL = "jdbc:h2:~/firstDatabase;AUTO_SERVER=TRUE";  
 
 	//  Database credentials 
 	static final String USER = "sa"; 
@@ -34,12 +34,28 @@ class DatabaseHelper {
 	}
 
 	private void createTables() throws SQLException {
-		String userTable = "CREATE TABLE IF NOT EXISTS cse360users ("
-				+ "id INT AUTO_INCREMENT PRIMARY KEY, "
-				+ "email VARCHAR(255) UNIQUE, "
-				+ "password VARCHAR(255), "
-				+ "role VARCHAR(20))";
+		// Updated user table creation
+		String userTable = "CREATE TABLE IF NOT EXISTS users ("
+		        + "id INT AUTO_INCREMENT PRIMARY KEY, "
+		        + "email VARCHAR(255) UNIQUE NOT NULL, "
+		        + "username VARCHAR(255) UNIQUE NOT NULL, "
+		        + "oneTimeFlag BOOLEAN, " // Optional
+		        + "firstName VARCHAR(255) NOT NULL, "
+		        + "middleName VARCHAR(255), "  // Optional
+		        + "lastName VARCHAR(255) NOT NULL, "
+		        + "preferredName VARCHAR(255), " // Optional
+		        + "role VARCHAR(20) NOT NULL, "
+		        + "hashedPassword VARCHAR(255) NOT NULL, "
+		        + "randSalt VARCHAR(255) NOT NULL)";
 		statement.execute(userTable);
+		
+		String topicsTable = "CREATE TABLE IF NOT EXISTS user_topics ("
+		        + "user_id INT NOT NULL, "
+		        + "topic_name VARCHAR(255) NOT NULL, "
+		        + "proficiency_level ENUM('beginner', 'intermediate', 'advanced', 'expert') DEFAULT 'intermediate',"
+		        + "FOREIGN KEY (user_id) REFERENCES cse360users(id) ON DELETE CASCADE, " // Optional
+		        + "PRIMARY KEY (user_id, topic_name)";
+		statement.execute(topicsTable);
 	}
 
 
@@ -53,6 +69,7 @@ class DatabaseHelper {
 		return true;
 	}
 
+	// TODO: Update this to take into account the user table with more attributes
 	public void register(String email, String password, String role) throws SQLException {
 		String insertUser = "INSERT INTO cse360users (email, password, role) VALUES (?, ?, ?)";
 		try (PreparedStatement pstmt = connection.prepareStatement(insertUser)) {
@@ -63,12 +80,11 @@ class DatabaseHelper {
 		}
 	}
 
-	public boolean login(String email, String password, String role) throws SQLException {
-		String query = "SELECT * FROM cse360users WHERE email = ? AND password = ? AND role = ?";
+	public boolean login(String email, String password) throws SQLException {
+		String query = "SELECT * FROM cse360users WHERE email = ? AND password = ?";
 		try (PreparedStatement pstmt = connection.prepareStatement(query)) {
 			pstmt.setString(1, email);
 			pstmt.setString(2, password);
-			pstmt.setString(3, role);
 			try (ResultSet rs = pstmt.executeQuery()) {
 				return rs.next();
 			}

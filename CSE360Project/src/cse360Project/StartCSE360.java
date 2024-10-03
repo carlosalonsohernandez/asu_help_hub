@@ -12,7 +12,6 @@ public class StartCSE360 {
 	{
 
 		try { 
-			
 			databaseHelper.connectToDatabase();  // Connect to the database
 
 			// Check if the database is empty (no users registered)
@@ -51,9 +50,15 @@ public class StartCSE360 {
 	private static void setupAdministrator() throws SQLException {
 		System.out.println("Setting up the Administrator access.");
 		System.out.print("Enter Admin Email: ");
+		String password;
+		String password2;
 		String email = scanner.nextLine();
-		System.out.print("Enter Admin Password: ");
-		String password = scanner.nextLine();
+		do {
+			System.out.println("Enter Admin Password: ");
+			password = scanner.nextLine();
+			System.out.println("Enter Admin Password Again: ");
+			password2 = scanner.nextLine();
+		} while(!password.equals(password2));
 		databaseHelper.register(email, password, "admin");
 		System.out.println("Administrator setup completed.");
 
@@ -82,9 +87,15 @@ public class StartCSE360 {
 		case "2":
 			System.out.print("Enter User Email: ");
 			email = scanner.nextLine();
-			System.out.print("Enter User Password: ");
+			String password2;
+			do {
+				System.out.println("Enter Admin Password: ");
+				password = scanner.nextLine();
+				System.out.println("Enter Admin Password Again: ");
+				password2 = scanner.nextLine();
+			} while(!password.equals(password2));
 			password = scanner.nextLine();
-			if (databaseHelper.login(email, password, "user")) {
+			if (databaseHelper.login(email, password)) {
 				System.out.println("User login successful.");
 //				databaseHelper.displayUsers();
 
@@ -101,7 +112,7 @@ public class StartCSE360 {
 		String email = scanner.nextLine();
 		System.out.print("Enter Admin Password: ");
 		String password = scanner.nextLine();
-		if (databaseHelper.login(email, password, "admin")) {
+		if (databaseHelper.login(email, password)) {
 			System.out.println("Admin login successful.");
 			databaseHelper.displayUsersByAdmin();
 

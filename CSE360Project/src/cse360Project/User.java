@@ -9,10 +9,12 @@ public class User {
 	public String firstName;
 	public String middleName;
 	public String lastName;
+	public String preferredName;
 	public Role role;
+	public Password password;
 	
 	// constructor with all values
-	public User(String email, String username, Boolean oneTimeFlag, String firstName, String middleName, String lastName, Role role1) {
+	public User(String email, String username, Boolean oneTimeFlag, String firstName, String middleName, String lastName, String preferredName, Role role1) {
 		this.email = email;
 		this.username = username;
 		this.oneTimeFlag = oneTimeFlag;
@@ -20,10 +22,11 @@ public class User {
 		this.middleName = middleName;
 		this.lastName = lastName;
 		this.role = role1;
+		this.preferredName = preferredName;
 		// validate password
 	}
 	
-	// constructor in case student with no middle name
+	// constructor in case student with no middle name and no preferred name
 	public User(String email, String username, Boolean oneTimeFlag, String firstName,  String lastName, Role role1) {
 		this.email = email;
 		this.username = username;
@@ -31,6 +34,17 @@ public class User {
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.role = role1;
+	}
+	
+	// constructor with no middle name but preferred name
+	public User(String email, String username, Boolean oneTimeFlag, String firstName,  String lastName, String preferredName, Role role1) {
+		this.email = email;
+		this.username = username;
+		this.oneTimeFlag = oneTimeFlag;
+		this.firstName = firstName;
+		this.lastName = lastName;
+		this.role = role1;
+		
 	}
 	
 	
