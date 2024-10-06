@@ -8,7 +8,7 @@ public class StartCSE360 {
 	private static final DatabaseHelper databaseHelper = new DatabaseHelper();
 	private static final Scanner scanner = new Scanner(System.in);
 
-	public static void mai( String[] args )
+	public static void main( String[] args )
 	{
 
 		try { 
