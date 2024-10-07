@@ -8,7 +8,8 @@ public class StartCSE360 {
 	private static final DatabaseHelper databaseHelper = new DatabaseHelper();
 	private static final Scanner scanner = new Scanner(System.in);
 
-	public static void main( String[] args )
+	// This class is here to compare how we are working with DB vs how it is used in existing projects by Professor Carter.
+	public static void startDB( String[] args )
 	{
 
 		try { 
