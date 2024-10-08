@@ -9,7 +9,7 @@ public class StartCSE360 {
 	private static final Scanner scanner = new Scanner(System.in);
 
 	// This class is here to compare how we are working with DB vs how it is used in existing projects by Professor Carter.
-	public static void startDB( String[] args )
+	public static void startDB( String[] args ) throws Exception
 	{
 
 		try { 
@@ -48,7 +48,7 @@ public class StartCSE360 {
 		}
 	}
 
-	private static void setupAdministrator() throws SQLException {
+	private static void setupAdministrator() throws SQLException, Exception {
 		System.out.println("Setting up the Administrator access.");
 		System.out.print("Enter Admin Email: ");
 		String password;
@@ -65,7 +65,7 @@ public class StartCSE360 {
 
 	}
 
-	private static void userFlow() throws SQLException {
+	private static void userFlow() throws SQLException, Exception {
 		String email = null;
 		String password = null;
 		System.out.println("user flow");
@@ -107,7 +107,7 @@ public class StartCSE360 {
 		}
 	}
 
-	private static void adminFlow() throws SQLException {
+	private static void adminFlow() throws Exception {
 		System.out.println("admin flow");
 		System.out.print("Enter Admin Email: ");
 		String email = scanner.nextLine();

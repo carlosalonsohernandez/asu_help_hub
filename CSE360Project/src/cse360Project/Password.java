@@ -59,8 +59,32 @@ public class Password {
             throw new Exception("Error during password verification: " + e.getMessage());
         }
     }
+    
+    public static boolean verifyPassword(String password, byte[] randSalt, byte[] hashedPassword) throws Exception {
+        try {
+            // Concatenate the stored salt with the input password
+            byte[] passwordBytes = password.getBytes();
+            byte[] saltedPassword = new byte[randSalt.length + passwordBytes.length];
+
+            System.arraycopy(randSalt, 0, saltedPassword, 0, randSalt.length); // Copy stored salt
+            System.arraycopy(passwordBytes, 0, saltedPassword, randSalt.length, passwordBytes.length); // Add password
+
+            // Hash the salted password
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hashedInputPassword = digest.digest(saltedPassword); // Hash salted password
+
+            // Compare the hashed input password with the stored hashed password
+            return MessageDigest.isEqual(hashedInputPassword, hashedPassword);
+        } catch (Exception e) {
+            throw new Exception("Error during password verification: " + e.getMessage());
+        }
+    }
 
     public byte[] getSalt() {
-        return randSalt;
+        return this.randSalt;
+    }
+    
+    public byte[] getHashedPass() {
+    	return this.hashedPassword;
     }
 }

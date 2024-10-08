@@ -5,13 +5,14 @@ import cse360Project.User;
 public class Role {
 	
 	// public static permissionDict
+	
 	public String roleName;
 	
 	public void assignRole(String role)
 	{
 		switch(role.toLowerCase()) {
-			case "ia":
-				this.roleName = "IA";
+			case "instructor":
+				this.roleName = "Instructor";
 			case "professor":
 				this.roleName = "Professor";
 			case "student":
