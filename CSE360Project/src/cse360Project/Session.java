@@ -41,6 +41,12 @@ public class Session {
 	{
 		this.userId = -1;
 		this.username = null;
+		this.firstName = null;
+		this.middleName = null;
+		this.lastName = null;
+		this.preferredName = null;
+		this.roles = null;
+		this.email = null;
 	}
 	
 	// getters and setters

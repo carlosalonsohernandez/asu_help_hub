@@ -97,6 +97,7 @@ public class App extends Application {
     		if(Session.getInstance().getFirstName() != null)
     		{
     			//continue to logout screen
+    			showStudentAndInstructorHomePage(primaryStage);
     		}
     		else
     		{
@@ -109,6 +110,8 @@ public class App extends Application {
     	}
     	
     }
+    
+  
     
     public void showRegistrationPage(Stage stage) {
         stage.setTitle("Registration");
@@ -172,6 +175,44 @@ public class App extends Application {
         gridPane.add(passwordField2, 1, 3);
         gridPane.add(registerButton, 1, 4);
         gridPane.add(warningLabel, 1, 5); // Add warning label below the Register button
+
+        // Set the Scene and show the Stage
+        Scene scene = new Scene(gridPane, 400, 300); // Width and Height
+        stage.setScene(scene);
+    }
+    
+    public void showStudentAndInstructorHomePage(Stage stage) {
+        stage.setTitle("Registration");
+        
+        // GridPane layout with padding
+        GridPane gridPane = new GridPane();
+        gridPane.setPadding(new Insets(10)); // Adds padding to avoid elements near edges
+        gridPane.setHgap(10); // Horizontal spacing between elements
+        gridPane.setVgap(10); // Vertical spacing between elements
+        
+        Label helloLabel = new Label("Welcome and hello " + Session.getInstance().getFirstName() + " " + Session.getInstance().getLastName() + "!");
+
+        // logout 
+        Button logoutButton = new Button("Logout");
+        
+        logoutButton.setOnAction(e -> {
+        	Session.getInstance().clear();
+        	try {
+				start(stage);
+			} catch (UnsupportedEncodingException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+
+        });
+
+        // Add elements to the GridPane
+
+        gridPane.add(helloLabel, 0, 1);
+        gridPane.add(logoutButton, 1, 2);
 
         // Set the Scene and show the Stage
         Scene scene = new Scene(gridPane, 400, 300); // Width and Height
