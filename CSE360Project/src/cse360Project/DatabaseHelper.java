@@ -192,11 +192,11 @@ class DatabaseHelper {
 	    return false; // If an error occurs, assume user doesn't exist
 	}
 	
-	public boolean updateUserById(int userId, String username, String firstName, String lastName, String preferredName, String role) throws SQLException {
+	public boolean updateUserById(int userId, String username, String firstName, String lastName, String preferredName) throws SQLException {
 	    String selectQuery = "SELECT * FROM users WHERE id = ?";
 	    
 	    // Query to update user details
-	    String updateQuery = "UPDATE users SET firstName = ?, lastName = ?, preferredName = ?, role = ? WHERE id = ?";
+	    String updateQuery = "UPDATE users SET firstName = ?, lastName = ?, preferredName = ? WHERE id = ?";
 	    
 	    try (PreparedStatement selectStmt = connection.prepareStatement(selectQuery)) {
 	        selectStmt.setInt(1, userId);
@@ -208,8 +208,7 @@ class DatabaseHelper {
 	                    updateStmt.setString(1, firstName);
 	                    updateStmt.setString(2, lastName);
 	                    updateStmt.setString(3, preferredName);
-	                    updateStmt.setString(4, role);
-	                    updateStmt.setInt(5, userId);
+	                    updateStmt.setInt(4, userId);
 	                    
 	                    int rowsUpdated = updateStmt.executeUpdate();
 	                    

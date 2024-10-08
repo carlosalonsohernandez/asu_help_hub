@@ -200,18 +200,13 @@ public class App extends Application {
         Label preferredNameLabel = new Label("Preferred Name (Optional):");
         TextField preferredNameField = new TextField();
 
-        // Role selection
-        Label roleLabel = new Label("Register as:");
-        ChoiceBox<String> roleChoiceBox = new ChoiceBox<>();
-        roleChoiceBox.getItems().addAll("Instructor", "User", "Admin"); 
-
         // Submit Button
         Button updateButton = new Button("Update");
         
         updateButton.setOnAction(e -> {
             System.out.println("Register clicked");
             try {
-				databaseHelper.updateUserById(Session.getInstance().getUserId(), emailField.getText(), firstNameField.getText(), lastNameField.getText(), preferredNameField.getText(), roleLabel.getText());
+				databaseHelper.updateUserById(Session.getInstance().getUserId(), emailField.getText(), firstNameField.getText(), lastNameField.getText(), preferredNameField.getText());
 				start(stage);
 			} catch (Exception e1) {
 				// TODO Auto-generated catch block
@@ -231,9 +226,7 @@ public class App extends Application {
         gridPane.add(lastNameField, 1, 4);
         gridPane.add(preferredNameLabel, 0, 5);
         gridPane.add(preferredNameField, 1, 5);
-        gridPane.add(roleLabel, 0, 6);
-        gridPane.add(roleChoiceBox, 1, 6);
-        gridPane.add(updateButton, 1, 7);
+        gridPane.add(updateButton, 1, 6);
 
         // Wrap in scoll pane to get the scrolling feature
         ScrollPane scrollPane = new ScrollPane();
