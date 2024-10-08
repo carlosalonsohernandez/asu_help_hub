@@ -50,6 +50,10 @@ public class App extends Application {
             try {
 				loginFlow(usernameField.getText(), passwordField.getText(), primaryStage);
 				System.out.println("Hello "+ Session.getInstance().getFirstName());
+				for(String role : Session.getInstance().getRoleNames())
+				{
+					System.out.println("Role: " + role.toString());
+				}
 			} catch (Exception e1) { 
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
@@ -200,7 +204,7 @@ public class App extends Application {
         Label preferredNameLabel = new Label("Preferred Name (Optional):");
         TextField preferredNameField = new TextField();
 
-        // Submit Button
+        // Update button
         Button updateButton = new Button("Update");
         
         updateButton.setOnAction(e -> {

@@ -7,7 +7,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.List;
 import java.sql.ResultSet;
 
 
@@ -31,6 +33,7 @@ class DatabaseHelper {
 			connection = DriverManager.getConnection(DB_URL, USER, PASS);
 			statement = connection.createStatement(); 
 			createTables();  // Create the necessary tables if they don't exist
+			insertDefaultRoles(); // Insert the default roles if they don't exist
 		} catch (ClassNotFoundException e) {
 			System.err.println("JDBC Driver not found: " + e.getMessage());
 		}
@@ -47,34 +50,72 @@ class DatabaseHelper {
 		        + "middleName VARCHAR(255), "  
 		        + "lastName VARCHAR(255), "
 		        + "preferredName VARCHAR(255), " 
-		        + "role VARCHAR(20) NOT NULL, "
 		        + "hashedPassword VARCHAR(255) NOT NULL, "
 		        + "randSalt VARCHAR(255) NOT NULL)";
 		statement.execute(userTable);
 		
+		// Create topics table
 		String topicsTable = "CREATE TABLE IF NOT EXISTS user_topics ("
 		        + "user_id INT NOT NULL, "
 		        + "topic_name VARCHAR(255) NOT NULL, "
 		        + "proficiency_level VARCHAR(20) DEFAULT 'intermediate', "
 		        + "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, " // Optional
 		        + "PRIMARY KEY (user_id, topic_name))";
+		
+
 		statement.execute(topicsTable);
+		
+		// Create roles table
+		String rolesTable = "CREATE TABLE IF NOT EXISTS roles ("
+		        + "id INT AUTO_INCREMENT PRIMARY KEY, "
+		        + "role_name VARCHAR(20) UNIQUE NOT NULL)";
+		statement.execute(rolesTable);
+
+		// Create user_roles join table
+		String userRolesTable = "CREATE TABLE IF NOT EXISTS user_roles ("
+		        + "user_id INT NOT NULL, "
+		        + "role_id INT NOT NULL, "
+		        + "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, "
+		        + "FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE, "
+		        + "PRIMARY KEY (user_id, role_id))";
+		statement.execute(userRolesTable);
+	}
+	
+	// insert default roles into roles table if not already there 
+	private void insertDefaultRoles() throws SQLException {
+	    // Insert Admin role if not exists
+	    String insertAdmin = "INSERT INTO roles (role_name) "
+	            + "SELECT * FROM (SELECT 'admin') AS tmp "
+	            + "WHERE NOT EXISTS (SELECT role_name FROM roles WHERE role_name = 'admin') LIMIT 1";
+	    statement.execute(insertAdmin);
+
+	    // Insert Student role if not exists
+	    String insertStudent = "INSERT INTO roles (role_name) "
+	            + "SELECT * FROM (SELECT 'student') AS tmp "
+	            + "WHERE NOT EXISTS (SELECT role_name FROM roles WHERE role_name = 'student') LIMIT 1";
+	    statement.execute(insertStudent);
+
+	    // Insert Instructor role if not exists
+	    String insertInstructor = "INSERT INTO roles (role_name) "
+	            + "SELECT * FROM (SELECT 'instructor') AS tmp "
+	            + "WHERE NOT EXISTS (SELECT role_name FROM roles WHERE role_name = 'instructor') LIMIT 1";
+	    statement.execute(insertInstructor);
 	}
 	
 	// Method to delete the tables from the database
 	public void dropTables() throws SQLException {
-	    String dropQuery = "DROP TABLE IF EXISTS user_topics";
-	    
+
+	    String dropQuery = "DROP TABLE IF EXISTS user_topics"; 
 	    statement.executeUpdate(dropQuery);
 	    
+	    dropQuery = "DROP TABLE IF EXISTS user_roles"; 
+	    statement.executeUpdate(dropQuery);
+
+	    // Now drop the users and roles tables
 	    dropQuery = "DROP TABLE IF EXISTS users";
-	    
-	    // Execute the drop table query
 	    statement.executeUpdate(dropQuery);
 	    
-	    dropQuery = "DROP TABLE IF EXISTS cse360users";
-	    
-	    // Execute the drop table query
+	    dropQuery = "DROP TABLE IF EXISTS roles";
 	    statement.executeUpdate(dropQuery);
 	    
 	    System.out.println("Tables have been dropped.");
@@ -105,21 +146,68 @@ class DatabaseHelper {
 	    System.out.println("Database has been emptied.");
 	}
 
-	// TODO: Update this to take into account the user table with more attributes
 	public void register(String username, String password, String role) throws Exception {
-		var passwd = new Password(password);
-		String hashedPassword = Base64.getEncoder().encodeToString(passwd.getHashedPass());
-		String randSalt = Base64.getEncoder().encodeToString(passwd.getSalt());
-		String insertUser = "INSERT INTO users (username, role, hashedPassword, randSalt) VALUES (?, ?, ?, ?)";
+	    var passwd = new Password(password);
+	    String hashedPassword = Base64.getEncoder().encodeToString(passwd.getHashedPass());
+	    String randSalt = Base64.getEncoder().encodeToString(passwd.getSalt());
 
-		
-		try (PreparedStatement pstmt = connection.prepareStatement(insertUser)) {
-			pstmt.setString(1, username);
-			pstmt.setString(2, role);
-			pstmt.setString(3, hashedPassword);
-			pstmt.setString(4, randSalt);
-			pstmt.executeUpdate();
-		}
+	    // Insert user into users table
+	    String insertUser = "INSERT INTO users (username, hashedPassword, randSalt) VALUES (?, ?, ?)";
+	    String getUserId = "SELECT id FROM users WHERE username = ?";
+	    String getRoleId = "SELECT id FROM roles WHERE role_name = ?";
+	    String insertUserRole = "INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)";
+
+	    try {
+	        connection.setAutoCommit(false); // Start transaction
+
+	        // Insert user into users table
+	        try (PreparedStatement pstmtUser = connection.prepareStatement(insertUser)) {
+	            pstmtUser.setString(1, username);
+	            pstmtUser.setString(2, hashedPassword);
+	            pstmtUser.setString(3, randSalt);
+	            pstmtUser.executeUpdate();
+	        }
+
+	        // Get user ID
+	        int userId;
+	        try (PreparedStatement pstmtGetUserId = connection.prepareStatement(getUserId)) {
+	            pstmtGetUserId.setString(1, username);
+	            try (ResultSet rs = pstmtGetUserId.executeQuery()) {
+	                if (rs.next()) {
+	                    userId = rs.getInt("id");
+	                } else {
+	                    throw new Exception("User registration failed. User ID not found.");
+	                }
+	            }
+	        }
+
+	        // Get role ID
+	        int roleId;
+	        try (PreparedStatement pstmtGetRoleId = connection.prepareStatement(getRoleId)) {
+	            pstmtGetRoleId.setString(1, role);
+	            try (ResultSet rs = pstmtGetRoleId.executeQuery()) {
+	                if (rs.next()) {
+	                    roleId = rs.getInt("id");
+	                } else {
+	                    throw new Exception("Invalid role provided.");
+	                }
+	            }
+	        }
+
+	        // Insert into user_roles table
+	        try (PreparedStatement pstmtUserRole = connection.prepareStatement(insertUserRole)) {
+	            pstmtUserRole.setInt(1, userId);
+	            pstmtUserRole.setInt(2, roleId);
+	            pstmtUserRole.executeUpdate();
+	        }
+
+	        connection.commit(); // Commit transaction
+	    } catch (Exception e) {
+	        connection.rollback(); // Rollback transaction if something goes wrong
+	        throw e;
+	    } finally {
+	        connection.setAutoCommit(true); // Restore auto-commit mode
+	    }
 	}
 	
 	// TODO: Update this to take into account the user table with more attributes
@@ -140,6 +228,10 @@ class DatabaseHelper {
 
 	public boolean login(String username, String password) throws Exception {
 	    String query = "SELECT * FROM users WHERE username = ?";
+	    String getUserRoles = "SELECT r.role_name FROM roles r "
+	                        + "JOIN user_roles ur ON r.id = ur.role_id "
+	                        + "WHERE ur.user_id = ?";
+	    
 	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
 	        pstmt.setString(1, username);
 
@@ -151,22 +243,37 @@ class DatabaseHelper {
 
 	                // Use your password verification method to compare
 	                boolean isValidPassword = Password.verifyPassword(password, 
-	                                            Base64.getDecoder().decode(randSalt), 
-	                                            Base64.getDecoder().decode(hashedPassword));
+	                                        Base64.getDecoder().decode(randSalt), 
+	                                        Base64.getDecoder().decode(hashedPassword));
 
 	                if (isValidPassword) {
 	                    // Retrieve user details
 	                    int userId = rs.getInt("id");
-	                    
+	                    String email = rs.getString("email");
+	                    String firstName = rs.getString("firstName");
+	                    String lastName = rs.getString("lastName");
+	                    String preferredName = rs.getString("preferredName");
+
+	                    // Fetch user roles from user_roles tablex
+	                    List<String> roles = new ArrayList<>();
+	                    try (PreparedStatement pstmtRoles = connection.prepareStatement(getUserRoles)) {
+	                        pstmtRoles.setInt(1, userId);
+	                        try (ResultSet rsRoles = pstmtRoles.executeQuery()) {
+	                            while (rsRoles.next()) {
+	                                roles.add(rsRoles.getString("role_name"));
+	                            }
+	                        }
+	                    }
+
 	                    // Set user session
-	                    // Check if you user has set up account
-	                    if (rs.getString("firstName") != null) {
-	                    	System.out.println("set up!");
-	                        Session.getInstance().setUser(userId, username,rs.getString("email"), rs.getString("firstName"), rs.getString("lastName"), rs.getString("preferredName"), rs.getString("role"));
+	                    if (firstName != null) {
+	                        System.out.println("set up!");
+	                        Session.getInstance().setUser(userId, username, email, firstName, lastName, preferredName, roles);
 	                    } else {
 	                        // Only guaranteed values
-	                    	System.out.println("missing set up");
-	                        Session.getInstance().setUser(userId, username);	                    }
+	                        System.out.println("missing set up");
+	                        Session.getInstance().setUser(userId, username, roles);
+	                    }
 	                    return true; // Successful login
 	                }
 	            }
@@ -224,55 +331,35 @@ class DatabaseHelper {
 	    }
 	}
 
-	public void displayUsersByAdmin() throws SQLException{
-		String sql = "SELECT * FROM users"; 
-		Statement stmt = connection.createStatement();
-		ResultSet rs = stmt.executeQuery(sql); 
-
-		while(rs.next()) { 
-			// Retrieve by column name 
-			int id  = rs.getInt("id"); 
-			String  email = rs.getString("email"); 
-			String password = rs.getString("hashedPassword"); 
-			String randSalt = rs.getString("randSalt");  
-			String role = rs.getString("role");  
-
-
-			// Display values 
-			System.out.print("ID: " + id); 
-			System.out.print(", Email: " + email); 
-			System.out.print(", Hashed Password: " + password); 
-			System.out.print(", Rand Salt: " + randSalt);
-			System.out.println(", Role: " + role); 
-		} 
-	}
 	
-	public void displayUsersByUser() throws UnsupportedEncodingException, Exception{
-		String sql = "SELECT * FROM users"; 
-		Statement stmt = connection.createStatement();
-		ResultSet rs = stmt.executeQuery(sql); 
+	public void displayUsersByUser() throws UnsupportedEncodingException, Exception {
+	    String sql = "SELECT users.id, users.email, users.username, users.hashedPassword, users.randSalt, "
+	               + "roles.role_name AS role, users.firstName "
+	               + "FROM users "
+	               + "LEFT JOIN user_roles ON users.id = user_roles.user_id "
+	               + "LEFT JOIN roles ON user_roles.role_id = roles.id"; 
+	    
+	    Statement stmt = connection.createStatement();
+	    ResultSet rs = stmt.executeQuery(sql); 
 
-		while(rs.next()) { 
-			// Retrieve by column name 
-			int id  = rs.getInt("id"); 
-			String  email = rs.getString("email"); 
-			String username = rs.getString("username");
-			String password = rs.getString("hashedPassword"); 
-			String randSalt = rs.getString("randSalt");  
-			String role = rs.getString("role");  
-			String firstName = rs.getString("firstName");
+	    while (rs.next()) { 
+	        int id = rs.getInt("id"); 
+	        String email = rs.getString("email"); 
+	        String username = rs.getString("username");
+	        String password = rs.getString("hashedPassword"); 
+	        String randSalt = rs.getString("randSalt");  
+	        String role = rs.getString("role"); 
+	        String firstName = rs.getString("firstName");
 
-
-			// Display values 
-			System.out.print("ID: " + id); 
-			System.out.print("username: " + username); 
-			System.out.print(", Email: " + email); 
-			System.out.println(", Hashed Password: " + Base64.getDecoder().decode(password)); 
-			System.out.println(", Rand Salt: " + Base64.getDecoder().decode(randSalt));
-			System.out.println(", Role: " + role); 
-			System.out.println(", First Name: " + firstName); 
-
-		} 
+	        // Display values 
+	        System.out.print("ID: " + id); 
+	        System.out.print(", Username: " + username); 
+	        System.out.print(", Email: " + email); 
+	        System.out.println(", Hashed Password: " + Base64.getDecoder().decode(password)); 
+	        System.out.println(", Rand Salt: " + Base64.getDecoder().decode(randSalt));
+	        System.out.println(", Role: " + role); 
+	        System.out.println(", First Name: " + firstName); 
+	    }
 	}
 
 

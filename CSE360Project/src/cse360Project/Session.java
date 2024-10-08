@@ -1,5 +1,8 @@
 package cse360Project;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Session {
 	private static Session instance;
 	private int userId;
@@ -9,10 +12,13 @@ public class Session {
 	private String middleName;
 	private String lastName;
 	private String preferredName;
-	private String role;
+	private List<String> roles;
 	
 	// empty constructor
-	private Session() {}
+	private Session() 		
+	{
+		roles = new ArrayList<>();
+	}
 	
 	private Session(int userId, String username) 
 	{
@@ -39,20 +45,21 @@ public class Session {
 	
 	// getters and setters
 
-	public void setUser(int userId, String username)
+	public void setUser(int userId, String username, List<String> roles)
 	{
 		this.userId = userId;
 		this.username = username;
+		this.roles = roles;
 	}
 	
-	public void setUser(int userId, String username, String email, String firstName, String lastName, String preferredName, String role) {
+	public void setUser(int userId, String username, String email, String firstName, String lastName, String preferredName, List<String> roles) {
 	    this.userId = userId;
 	    this.username = username;
 	    this.email = email;
 	    this.firstName = firstName != null ? firstName : "";
 	    this.lastName = lastName != null ? lastName : "";
 	    this.preferredName = preferredName != null ? preferredName : "";
-	    this.role = role != null ? role : "";
+	    this.roles = roles != null ? roles : null;
 	}
 	
 	public int getUserId()
@@ -115,13 +122,13 @@ public class Session {
 		this.preferredName = preferredName;
 	}
 	
-	public String getRoleName()
+	public List<String> getRoleNames()
 	{
-		return this.role;
+		return this.roles;
 	}
 	
-	public void setRoleName(String role)
+	public void setRoleNames(List<String> role)
 	{
-		this.role = role;
+		this.roles = role;
 	}
 }
