@@ -35,8 +35,8 @@ public class App extends Application {
         primaryStage.setTitle("ASU Help Hub");
 
         // Labels and Text Fields
-        Label emailLabel = new Label("Email:");
-        TextField emailField = new TextField();
+        Label usernameLabel = new Label("Username:");
+        TextField usernameField = new TextField();
         
         Label passwordLabel = new Label("Password:");
         PasswordField passwordField = new PasswordField();
@@ -46,9 +46,10 @@ public class App extends Application {
         Button registerButton = new Button("Register");
 
         loginButton.setOnAction(e -> {
-            System.out.println(emailField.getText());
+            System.out.println(usernameField.getText());
             try {
-				loginFlow(emailField.getText(), passwordField.getText());
+				loginFlow(usernameField.getText(), passwordField.getText(), primaryStage);
+				System.out.println("Hello "+ Session.getInstance().getFirstName());
 			} catch (Exception e1) { 
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
@@ -62,7 +63,7 @@ public class App extends Application {
 
         // Layouts
         VBox layout = new VBox(10); 
-        layout.getChildren().addAll(emailLabel, emailField, passwordLabel, passwordField);
+        layout.getChildren().addAll(usernameLabel, usernameField, passwordLabel, passwordField);
 
         HBox buttonLayout = new HBox(10);
         buttonLayout.getChildren().addAll(loginButton, registerButton);
@@ -86,10 +87,19 @@ public class App extends Application {
      * TODO: Implement auth and current session logic to actually login a user.
      * @throws Exception 
      * **/
-    public void loginFlow(String email, String password) throws Exception
+    public void loginFlow(String username, String password, Stage primaryStage) throws Exception
     {
-    	if(databaseHelper.login(email, password)) {
-    		System.out.println("LOGGEDIN!");
+    	if(databaseHelper.login(username, password)) {
+    		if(Session.getInstance().getFirstName() != null)
+    		{
+    			//continue to logout screen
+    		}
+    		else
+    		{
+    			// finish your account login
+    			showFinishSetup(primaryStage);
+    			
+    		}
     	} else {
     		System.out.println("notlogged");
     	}
@@ -105,7 +115,7 @@ public class App extends Application {
         gridPane.setHgap(10); // Horizontal spacing between elements
         gridPane.setVgap(10); // Vertical spacing between elements
         
-        Label emailLabel = new Label("Email:");
+        Label emailLabel = new Label("Username:");
         TextField emailField = new TextField();
         
         Label passwordLabel = new Label("Password:");
@@ -139,6 +149,7 @@ public class App extends Application {
                     	databaseHelper.register(emailField.getText(), passwordField.getText());
                         System.out.println("User registered successfully!");
                 	}
+                	start(stage);
                 } catch (Exception e1) {
                     e1.printStackTrace();
                 }
@@ -162,6 +173,7 @@ public class App extends Application {
         Scene scene = new Scene(gridPane, 400, 300); // Width and Height
         stage.setScene(scene);
     }
+    
 
     // Finish setting up your account:
     public void showFinishSetup(Stage stage) {
@@ -173,8 +185,8 @@ public class App extends Application {
         gridPane.setHgap(10); // Horizontal spacing between elements
         gridPane.setVgap(10); // Vertical spacing between elements
 
-        Label usernameLabel = new Label("Username:");
-        TextField usernameField = new TextField();
+        Label emailLabel = new Label("Email:");
+        TextField emailField = new TextField();
 
         Label firstNameLabel = new Label("First Name:");
         TextField firstNameField = new TextField();
@@ -194,11 +206,23 @@ public class App extends Application {
         roleChoiceBox.getItems().addAll("Instructor", "User", "Admin"); 
 
         // Submit Button
-        Button registerButton = new Button("Register");
+        Button updateButton = new Button("Update");
+        
+        updateButton.setOnAction(e -> {
+            System.out.println("Register clicked");
+            try {
+				databaseHelper.updateUserById(Session.getInstance().getUserId(), emailField.getText(), firstNameField.getText(), lastNameField.getText(), preferredNameField.getText(), roleLabel.getText());
+				start(stage);
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+            //showRegistrationPage();
+        });
 
         // Add elements to the GridPane
-        gridPane.add(usernameLabel, 0, 1);
-        gridPane.add(usernameField, 1, 1);
+        gridPane.add(emailLabel, 0, 1);
+        gridPane.add(emailField, 1, 1);
         gridPane.add(firstNameLabel, 0, 2);
         gridPane.add(firstNameField, 1, 2);
         gridPane.add(middleNameLabel, 0, 3);
@@ -209,7 +233,7 @@ public class App extends Application {
         gridPane.add(preferredNameField, 1, 5);
         gridPane.add(roleLabel, 0, 6);
         gridPane.add(roleChoiceBox, 1, 6);
-        gridPane.add(registerButton, 1, 7);
+        gridPane.add(updateButton, 1, 7);
 
         // Wrap in scoll pane to get the scrolling feature
         ScrollPane scrollPane = new ScrollPane();

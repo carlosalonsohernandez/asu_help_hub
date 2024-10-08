@@ -39,14 +39,15 @@ public class Session {
 	
 	// getters and setters
 
-	public void setUser(int userId, String email)
+	public void setUser(int userId, String username)
 	{
 		this.userId = userId;
-		this.email = email;
+		this.username = username;
 	}
 	
-	public void setUser(int userId, String email, String firstName, String lastName, String preferredName, String role) {
+	public void setUser(int userId, String username, String email, String firstName, String lastName, String preferredName, String role) {
 	    this.userId = userId;
+	    this.username = username;
 	    this.email = email;
 	    this.firstName = firstName != null ? firstName : "";
 	    this.lastName = lastName != null ? lastName : "";
@@ -74,4 +75,53 @@ public class Session {
 		this.username = username;
 	}
 	
+	public String getFirstName()
+	{
+		return this.firstName;
+	}
+	
+	public void setFirstName(String firstName)
+	{
+		this.firstName = firstName;
+	}
+	
+	public String getMiddleName()
+	{
+		return this.middleName;
+	}
+	
+	public void setMiddleName(String middleName)
+	{
+		this.middleName = middleName;
+	}
+	
+	public String getLastName()
+	{
+		return this.lastName;
+	}
+	
+	public void setLastName(String lastName)
+	{
+		this.lastName = lastName;
+	}
+	
+	public String getPreferredName()
+	{
+		return this.preferredName;
+	}
+	
+	public void setPreferredName(String preferredName)
+	{
+		this.preferredName = preferredName;
+	}
+	
+	public String getRoleName()
+	{
+		return this.role;
+	}
+	
+	public void setRoleName(String role)
+	{
+		this.role = role;
+	}
 }

@@ -40,8 +40,8 @@ class DatabaseHelper {
 		// Updated user table creation
 		String userTable = "CREATE TABLE IF NOT EXISTS users ("
 		        + "id INT AUTO_INCREMENT PRIMARY KEY, "
-		        + "email VARCHAR(255) UNIQUE NOT NULL, "
-		        + "username VARCHAR(255) UNIQUE, "
+		        + "email VARCHAR(255) UNIQUE, "
+		        + "username VARCHAR(255) UNIQUE NOT NULL, "
 		        + "oneTimeFlag BOOLEAN, " 
 		        + "firstName VARCHAR(255), "
 		        + "middleName VARCHAR(255), "  
@@ -106,15 +106,15 @@ class DatabaseHelper {
 	}
 
 	// TODO: Update this to take into account the user table with more attributes
-	public void register(String email, String password, String role) throws Exception {
+	public void register(String username, String password, String role) throws Exception {
 		var passwd = new Password(password);
 		String hashedPassword = Base64.getEncoder().encodeToString(passwd.getHashedPass());
 		String randSalt = Base64.getEncoder().encodeToString(passwd.getSalt());
-		String insertUser = "INSERT INTO users (email, role, hashedPassword, randSalt) VALUES (?, ?, ?, ?)";
+		String insertUser = "INSERT INTO users (username, role, hashedPassword, randSalt) VALUES (?, ?, ?, ?)";
 
 		
 		try (PreparedStatement pstmt = connection.prepareStatement(insertUser)) {
-			pstmt.setString(1, email);
+			pstmt.setString(1, username);
 			pstmt.setString(2, role);
 			pstmt.setString(3, hashedPassword);
 			pstmt.setString(4, randSalt);
@@ -123,25 +123,25 @@ class DatabaseHelper {
 	}
 	
 	// TODO: Update this to take into account the user table with more attributes
-	public void register(String email, String password) throws Exception {
+	public void register(String username, String password) throws Exception {
 		var passwd = new Password(password);
 		String hashedPassword = Base64.getEncoder().encodeToString(passwd.getHashedPass());
 		String randSalt = Base64.getEncoder().encodeToString(passwd.getSalt());
-		String insertUser = "INSERT INTO users (email, hashedPassword, randSalt) VALUES (?, ?, ?)";
+		String insertUser = "INSERT INTO users (username, hashedPassword, randSalt) VALUES (?, ?, ?)";
 
 		
 		try (PreparedStatement pstmt = connection.prepareStatement(insertUser)) {
-			pstmt.setString(1, email);
+			pstmt.setString(1, username);
 			pstmt.setString(2, hashedPassword);
 			pstmt.setString(3, randSalt);
 			pstmt.executeUpdate();
 		}
 	}
 
-	public boolean login(String email, String password) throws Exception {
-	    String query = "SELECT * FROM users WHERE email = ?";
+	public boolean login(String username, String password) throws Exception {
+	    String query = "SELECT * FROM users WHERE username = ?";
 	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-	        pstmt.setString(1, email);
+	        pstmt.setString(1, username);
 
 	        try (ResultSet rs = pstmt.executeQuery()) {
 	            if (rs.next()) {
@@ -162,11 +162,11 @@ class DatabaseHelper {
 	                    // Check if you user has set up account
 	                    if (rs.getString("firstName") != null) {
 	                    	System.out.println("set up!");
-	                        Session.getInstance().setUser(userId, email, rs.getString("firstName"), rs.getString("lastName"), rs.getString("preferredName"), rs.getString("role"));
+	                        Session.getInstance().setUser(userId, username,rs.getString("email"), rs.getString("firstName"), rs.getString("lastName"), rs.getString("preferredName"), rs.getString("role"));
 	                    } else {
 	                        // Only guaranteed values
 	                    	System.out.println("missing set up");
-	                        Session.getInstance().setUser(userId, email);	                    }
+	                        Session.getInstance().setUser(userId, username);	                    }
 	                    return true; // Successful login
 	                }
 	            }
@@ -190,6 +190,39 @@ class DatabaseHelper {
 	        e.printStackTrace();
 	    }
 	    return false; // If an error occurs, assume user doesn't exist
+	}
+	
+	public boolean updateUserById(int userId, String username, String firstName, String lastName, String preferredName, String role) throws SQLException {
+	    String selectQuery = "SELECT * FROM users WHERE id = ?";
+	    
+	    // Query to update user details
+	    String updateQuery = "UPDATE users SET firstName = ?, lastName = ?, preferredName = ?, role = ? WHERE id = ?";
+	    
+	    try (PreparedStatement selectStmt = connection.prepareStatement(selectQuery)) {
+	        selectStmt.setInt(1, userId);
+	        
+	        try (ResultSet rs = selectStmt.executeQuery()) {
+	            if (rs.next()) {
+	                // User exists, proceed with updating their details
+	                try (PreparedStatement updateStmt = connection.prepareStatement(updateQuery)) {
+	                    updateStmt.setString(1, firstName);
+	                    updateStmt.setString(2, lastName);
+	                    updateStmt.setString(3, preferredName);
+	                    updateStmt.setString(4, role);
+	                    updateStmt.setInt(5, userId);
+	                    
+	                    int rowsUpdated = updateStmt.executeUpdate();
+	                    
+	                    // Return true if update was successful
+	                    return rowsUpdated > 0;
+	                }
+	            } else {
+	                // User with the given ID dosnt exist
+	                System.out.println("User with ID " + userId + " not found.");
+	                return false;
+	            }
+	        }
+	    }
 	}
 
 	public void displayUsersByAdmin() throws SQLException{
@@ -224,17 +257,22 @@ class DatabaseHelper {
 			// Retrieve by column name 
 			int id  = rs.getInt("id"); 
 			String  email = rs.getString("email"); 
+			String username = rs.getString("username");
 			String password = rs.getString("hashedPassword"); 
 			String randSalt = rs.getString("randSalt");  
 			String role = rs.getString("role");  
+			String firstName = rs.getString("firstName");
 
 
 			// Display values 
 			System.out.print("ID: " + id); 
+			System.out.print("username: " + username); 
 			System.out.print(", Email: " + email); 
 			System.out.println(", Hashed Password: " + Base64.getDecoder().decode(password)); 
 			System.out.println(", Rand Salt: " + Base64.getDecoder().decode(randSalt));
 			System.out.println(", Role: " + role); 
+			System.out.println(", First Name: " + firstName); 
+
 		} 
 	}
 
