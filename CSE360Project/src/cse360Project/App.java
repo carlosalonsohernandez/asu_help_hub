@@ -3,6 +3,7 @@ package cse360Project;
 import javafx.application.Application;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ChoiceBox;
 import javafx.stage.Stage;
@@ -28,18 +29,22 @@ public class App extends Application {
     @Override
     public void start(Stage primaryStage) throws UnsupportedEncodingException, Exception {
         // Title for the window
-    	databaseHelper.connectToDatabase();
-    	String s = databaseHelper.isDatabaseEmpty() ? "empty" : "not empty";
-    	databaseHelper.displayUsersByUser();
-    	System.out.println(s);
+        databaseHelper.connectToDatabase();
+        String s = databaseHelper.isDatabaseEmpty() ? "empty" : "not empty";
+        databaseHelper.displayUsersByUser();
+        System.out.println(s);
         primaryStage.setTitle("ASU Help Hub");
 
         // Labels and Text Fields
         Label usernameLabel = new Label("Username:");
         TextField usernameField = new TextField();
-        
+
         Label passwordLabel = new Label("Password:");
         PasswordField passwordField = new PasswordField();
+
+        // Invite code fields
+        Label inviteCodeLabel = new Label("Invite Code (For Registration):");
+        TextField inviteCodeField = new TextField();
 
         // Buttons
         Button loginButton = new Button("Login");
@@ -48,26 +53,44 @@ public class App extends Application {
         loginButton.setOnAction(e -> {
             System.out.println(usernameField.getText());
             try {
-				loginFlow(usernameField.getText(), passwordField.getText(), primaryStage);
-				System.out.println("Hello "+ Session.getInstance().getFirstName());
-				for(String role : Session.getInstance().getRoleNames())
-				{
-					System.out.println("Role: " + role.toString());
+                loginFlow(usernameField.getText(), passwordField.getText(), primaryStage);
+                System.out.println("Hello " + Session.getInstance().getFirstName());
+                for (String role : Session.getInstance().getRoleNames()) {
+                    System.out.println("Role: " + role);
+                }
+            } catch (Exception e1) {
+                e1.printStackTrace();
+            }
+        });
+
+        registerButton.setOnAction(e -> {
+            System.out.println("Register clicked");
+            
+            try {
+				if (databaseHelper.isDatabaseEmpty()) {
+				    // Directly show the registration page if the database is empty
+				    showRegistrationPage(primaryStage);
+				} else {
+				    // Check the invite code
+				    String inviteCode = inviteCodeField.getText();
+				    if (isInviteCodeValid(inviteCode)) {
+				        // Proceed to registration if the invite code is valid
+				        showRegistrationPage(primaryStage);
+				    } else {
+				        // error message
+				        showAlert("Invalid invite code. Please try again.");
+				    }
 				}
-			} catch (Exception e1) { 
+			} catch (SQLException e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
         });
 
-        registerButton.setOnAction(e -> {
-            System.out.println("Register clicked");
-            showRegistrationPage(primaryStage);
-        });
-
         // Layouts
-        VBox layout = new VBox(10); 
-        layout.getChildren().addAll(usernameLabel, usernameField, passwordLabel, passwordField);
+        VBox layout = new VBox(10);
+        layout.getChildren().addAll(usernameLabel, usernameField, passwordLabel, passwordField,
+                                    inviteCodeLabel, inviteCodeField);
 
         HBox buttonLayout = new HBox(10);
         buttonLayout.getChildren().addAll(loginButton, registerButton);
@@ -77,13 +100,28 @@ public class App extends Application {
         layout.setPadding(new Insets(20, 20, 20, 20));
 
         // Set up the scene with the layout
-        Scene scene = new Scene(layout, 300, 200);
+        Scene scene = new Scene(layout, 300, 250); // Increased height for the invite code field
 
         // Set the scene on the stage
         primaryStage.setScene(scene);
 
         // Show the stage (window)
         primaryStage.show();
+    }
+
+    // Method to check if the invite code is valid
+    private boolean isInviteCodeValid(String inviteCode) {
+        // TODO: 
+        return inviteCode != null && !inviteCode.trim().isEmpty(); // Example validation
+    }
+
+    // Method to show an alert for invalid invite codes
+    private void showAlert(String message) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error");
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
     }
     
     /***
