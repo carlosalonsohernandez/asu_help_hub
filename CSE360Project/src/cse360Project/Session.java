@@ -13,6 +13,7 @@ public class Session {
 	private String lastName;
 	private String preferredName;
 	private List<String> roles;
+	private List<String> invitedRoles;
 	
 	// empty constructor
 	private Session() 		
@@ -127,14 +128,30 @@ public class Session {
 	{
 		this.preferredName = preferredName;
 	}
-	
-	public List<String> getRoleNames()
-	{
-		return this.roles;
+
+	public List<String> getRoleNames() {
+	    if (roles == null) {
+	        return new ArrayList<>(); 
+	    }
+	    return roles;
 	}
 	
 	public void setRoleNames(List<String> role)
 	{
 		this.roles = role;
 	}
+	
+
+    public List<String> getInvitedRoles() {
+        return invitedRoles;
+    }
+
+    public void setInvitedRoles(List<String> invitedRoles) {
+    	System.out.println("Session stored the following roles:");
+    	for (var role : invitedRoles)
+    	{
+    		System.out.println(role);
+    	}
+        this.invitedRoles = invitedRoles;
+    }
 }

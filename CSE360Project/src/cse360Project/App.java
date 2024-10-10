@@ -1,15 +1,19 @@
 package cse360Project;
 
 import javafx.application.Application;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
 import javafx.stage.Stage;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -20,6 +24,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
+
 import javafx.scene.layout.GridPane;
 
 public class App extends Application {
@@ -73,7 +80,7 @@ public class App extends Application {
 				} else {
 				    // Check the invite code
 				    String inviteCode = inviteCodeField.getText();
-				    if (isInviteCodeValid(inviteCode)) {
+				    if (databaseHelper.validateInvitationCode(inviteCode)) {
 				        // Proceed to registration if the invite code is valid
 				        showRegistrationPage(primaryStage);
 				    } else {
@@ -194,12 +201,12 @@ public class App extends Application {
                 try {
                 	if(databaseHelper.isDatabaseEmpty())
                 	{
-                    	databaseHelper.register(emailField.getText(), passwordField.getText(), "admin");
+                    	databaseHelper.register(emailField.getText(), passwordField.getText(), List.of("admin"));
                         System.out.println("User registered with admin privileges successfully!");
                 	}
                 	else
                 	{
-                    	databaseHelper.register(emailField.getText(), passwordField.getText());
+                    	databaseHelper.register(emailField.getText(), passwordField.getText(), Session.getInstance().getInvitedRoles());
                         System.out.println("User registered successfully!");
                 	}
                 	start(stage);
@@ -241,6 +248,8 @@ public class App extends Application {
 
          // logout 
          Button logoutButton = new Button("Logout");
+         Button generateInviteButton = new Button("Generate Invite");
+         Button manageUsersButton = new Button("Manage Users");
          
          logoutButton.setOnAction(e -> {
          	Session.getInstance().clear();
@@ -256,16 +265,45 @@ public class App extends Application {
 
          });
 
-         // Add elements to the GridPane
+         generateInviteButton.setOnAction(e -> {
+          	Session.getInstance().clear();
+          	try {
+  				showAdminInvitePage(stage);
+  			} catch (Exception e1) {
+  				// TODO Auto-generated catch block
+  				e1.printStackTrace();
+  			}
 
+          });
+         
+         manageUsersButton.setOnAction(e -> {
+           	Session.getInstance().clear();
+           	try {
+   				showManageUsersPage(stage);
+   			} catch (Exception e1) {
+   				// TODO Auto-generated catch block
+   				e1.printStackTrace();
+   			}
+
+           });
+        
+         
+         // Add elements to the GridPane
          gridPane.add(helloLabel, 0, 1);
-         gridPane.add(logoutButton, 1, 2);
+         gridPane.add(generateInviteButton, 1, 2);
+         gridPane.add(manageUsersButton, 1, 3);
+         gridPane.add(logoutButton, 1, 4);
+
+         ScrollPane scrollPane = new ScrollPane();
+         scrollPane.setContent(gridPane);
 
          // Set the Scene and show the Stage
-         Scene scene = new Scene(gridPane, 400, 300); // Width and Height
+         Scene scene = new Scene(scrollPane, 400, 300); // Width and Height
          stage.setScene(scene);
     }
     
+
+
     public void showAdminInvitePage(Stage stage) {
         stage.setTitle("Generate Invitation");
 
@@ -275,10 +313,11 @@ public class App extends Application {
         gridPane.setHgap(10);
         gridPane.setVgap(10);
 
-        // Role dropdown
-        Label roleLabel = new Label("Select Role:");
-        ChoiceBox<String> roleChoiceBox = new ChoiceBox<>();
-        roleChoiceBox.getItems().addAll("student", "admin", "instructor");
+        // Role selection using checkboxes
+        Label roleLabel = new Label("Select Roles:");
+        CheckBox studentCheckBox = new CheckBox("Student");
+        CheckBox adminCheckBox = new CheckBox("Admin");
+        CheckBox instructorCheckBox = new CheckBox("Instructor");
 
         // Text field for the invitation code
         Label inviteCodeLabel = new Label("Enter Invitation Code:");
@@ -288,14 +327,28 @@ public class App extends Application {
         Button generateButton = new Button("Generate Invitation");
         Label messageLabel = new Label();
 
+        Button backButton = new Button("Back");
+        
         generateButton.setOnAction(e -> {
-            String selectedRole = roleChoiceBox.getValue();
+            // Gather selected roles
+            List<String> selectedRoles = new ArrayList<>();
+            if (studentCheckBox.isSelected()) {
+                selectedRoles.add("student");
+            }
+            if (adminCheckBox.isSelected()) {
+                selectedRoles.add("admin");
+            }
+            if (instructorCheckBox.isSelected()) {
+                selectedRoles.add("instructor");
+            }
+
             String inviteCode = inviteCodeField.getText();
-            if (selectedRole != null && !inviteCode.isEmpty()) {
+            
+            if (!selectedRoles.isEmpty() && !inviteCode.isEmpty()) {
                 try {
-                    // Store invitation code with selected role in the database
-                    databaseHelper.storeInvite(inviteCode, selectedRole);
-                    messageLabel.setText("Invitation generated successfully!");
+                    // Store invitation code with selected roles in the database
+                    databaseHelper.storeInvite(inviteCode, selectedRoles);
+                    messageLabel.setText("Invitation generated successfully with roles: " + String.join(", ", selectedRoles));
                     messageLabel.setTextFill(Color.GREEN);
                 } catch (Exception ex) {
                     ex.printStackTrace();
@@ -303,24 +356,104 @@ public class App extends Application {
                     messageLabel.setTextFill(Color.RED);
                 }
             } else {
-                messageLabel.setText("Please select a role and enter a valid invite code.");
+                messageLabel.setText("Please select at least one role and enter a valid invite code.");
                 messageLabel.setTextFill(Color.RED);
             }
         });
+        
+        backButton.setOnAction(e -> {
+        	showAdminHomePage(stage);
+        });
 
-        // Add elements to grid
+        // Layout positioning
         gridPane.add(roleLabel, 0, 0);
-        gridPane.add(roleChoiceBox, 1, 0);
-        gridPane.add(inviteCodeLabel, 0, 1);
-        gridPane.add(inviteCodeField, 1, 1);
-        gridPane.add(generateButton, 1, 2);
-        gridPane.add(messageLabel, 1, 3);
+        gridPane.add(studentCheckBox, 1, 0);
+        gridPane.add(adminCheckBox, 1, 1);
+        gridPane.add(instructorCheckBox, 1, 2);
+        gridPane.add(inviteCodeLabel, 0, 3);
+        gridPane.add(inviteCodeField, 1, 3);
+        gridPane.add(generateButton, 1, 4);
+        gridPane.add(messageLabel, 1, 5);
+        gridPane.add(backButton, 1, 6);
 
+        // Scene setup
         Scene scene = new Scene(gridPane, 400, 250);
+        stage.setScene(scene);
+        stage.show();
+    }
+    
+    public void showManageUsersPage(Stage stage) {
+        stage.setTitle("Manage Student Accounts");
+
+        // Create GridPane layout
+        GridPane gridPane = new GridPane();
+        gridPane.setPadding(new Insets(10));
+        gridPane.setHgap(10);
+        gridPane.setVgap(10);
+
+        // Label for page title
+        Label titleLabel = new Label("Manage Student Accounts");
+        gridPane.add(titleLabel, 0, 0, 2, 1); // Span two columns
+
+        // Table to display user accounts
+        TableView<List<String>> tableView = new TableView<>(); // Use List<String> for raw data
+        TableColumn<List<String>, String> usernameCol = new TableColumn<>("Username");
+        usernameCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(0))); // Access username
+        TableColumn<List<String>, String> nameCol = new TableColumn<>("Name");
+        nameCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(1))); // Access name
+        TableColumn<List<String>, String> roleCol = new TableColumn<>("Roles");
+        roleCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(2))); // Access roles
+
+        tableView.getColumns().addAll(usernameCol, nameCol, roleCol);
+        databaseHelper.loadUsersIntoTable(tableView); // Load user data into the table
+        gridPane.add(tableView, 0, 1, 2, 1); // Span two columns
+
+        // Reset Password button
+        Button resetPasswordButton = new Button("Reset Password");
+        resetPasswordButton.setOnAction(e -> {
+            List<String> selectedUser = tableView.getSelectionModel().getSelectedItem();
+            if (selectedUser != null) {
+               try {
+				databaseHelper.resetUserPassword(selectedUser.get(0));
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} // Assuming username is at index 0
+            }
+        });
+        gridPane.add(resetPasswordButton, 0, 2);
+
+        // Delete User button
+        Button deleteUserButton = new Button("Delete User");
+        deleteUserButton.setOnAction(e -> {
+            List<String> selectedUser = tableView.getSelectionModel().getSelectedItem();
+            if (selectedUser != null) {
+               databaseHelper.deleteUserAccount(selectedUser.get(0)); // Assuming username is at index 0
+               // refresh view to update table
+               showManageUsersPage(stage);
+            }
+        });
+        gridPane.add(deleteUserButton, 1, 2);
+
+        // Logout button
+        Button logoutButton = new Button("Logout");
+        logoutButton.setOnAction(e -> {
+            Session.getInstance().clear();
+            try {
+                start(stage); // Redirect to login page
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+        gridPane.add(logoutButton, 1, 3);
+
+        // Set the Scene and show the Stage
+        Scene scene = new Scene(gridPane, 600, 400);
         stage.setScene(scene);
     }
     
-    public void showStudentAndInstructorHomePage(Stage stage) {
+
+	public void showStudentAndInstructorHomePage(Stage stage) {
         stage.setTitle("Home");
         
         // GridPane layout with padding
