@@ -3,8 +3,28 @@ package cse360Project;
 import java.util.ArrayList;
 import java.util.List;
 
+/*******
+ * <p> User Class </p>
+ * 
+ * <p> Description: A user class which will serve to abstract a lot of the raw data away in future versions/refactors. </p>
+ * 
+ * <p> Copyright: Carlos Hernandez © 2024 </p>
+ * 
+ * @author Carlos Hernandez
+ * 
+ * @version 1.0.0	2024-10-09 Updated for Phase 1
+ * 
+ */
+
 public class User {
-    // user attributes
+	/**********************************************************************************************
+
+	Attributes
+	
+	**********************************************************************************************/
+	
+	// These are the application values required by the User class in order to function
+	// The names of the variables specify their function and all are set to null until initialized 
     public String email;
     public String username;
     public Boolean oneTimeFlag;
@@ -15,6 +35,11 @@ public class User {
     public List<Role> roles; 
     public Password password;
 
+	/**********************************************************************************************
+
+	Constructors
+	
+	**********************************************************************************************/
     // constructor with all values
     public User(String email, String username, Boolean oneTimeFlag, String firstName, String middleName, String lastName, String preferredName, List<Role> roles) {
         this.email = email;
@@ -37,6 +62,11 @@ public class User {
         this(email, username, oneTimeFlag, firstName, null, lastName, preferredName, roles);
     }
     
+	/**********************************************************************************************
+
+	Methods
+	
+	**********************************************************************************************/
     // Method to get a formatted string of role names
     public String getRoleNames() {
     	String roleNames = "";
@@ -47,6 +77,11 @@ public class User {
     	return roleNames;
     }
     
+	/**********************************************************************************************
+
+	Getters and Setters
+	
+	**********************************************************************************************/
     // add role if not null
     public void addRole(Role role) {
         if (role != null && !roles.contains(role)) {

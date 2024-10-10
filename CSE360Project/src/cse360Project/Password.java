@@ -3,7 +3,18 @@ package cse360Project;
 import java.security.MessageDigest;
 import java.security.SecureRandom;
 
-
+/*******
+ * <p> App Class </p>
+ * 
+ * <p> Description: A password class which encapsulates a lot of the functionality of hashing and validating passwords.  </p>
+ * 
+ * <p> Copyright: Carlos Hernandez © 2024 </p>
+ * 
+ * @author Carlos Hernandez
+ * 
+ * @version 1.0.0	2024-10-09 Updated for Phase 1
+ * 
+ */
 public class Password {
 
     public byte[] hashedPassword;
@@ -60,6 +71,7 @@ public class Password {
         }
     }
     
+    // static version which can provide utility
     public static boolean verifyPassword(String password, byte[] randSalt, byte[] hashedPassword) throws Exception {
         try {
             // Concatenate the stored salt with the input password

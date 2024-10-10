@@ -37,7 +37,7 @@ import javafx.scene.layout.GridPane;
 /*******
  * <p> App Class </p>
  * 
- * <p> Description: An evaluation class which works to verify/evaluate different passwords. </p>
+ * <p> Description: An application class which controls the main flow of the GUI and application. </p>
  * 
  * <p> Copyright: Carlos Hernandez © 2024 </p>
  * 
@@ -188,6 +188,7 @@ public class App extends Application {
         }
     }
 
+    // If an OTP is used, we require the user to reset their password
     private void showResetPassword(Stage stage) {
         stage.setTitle("Update Password");
 

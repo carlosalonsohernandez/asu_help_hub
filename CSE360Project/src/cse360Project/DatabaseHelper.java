@@ -20,7 +20,18 @@ import javafx.scene.control.TableView;
 
 import java.sql.ResultSet;
 
-
+/*******
+ * <p> DatabaseHelper Class </p>
+ * 
+ * <p> Description: An database utility class which helps with various controls surrounding the database. </p>
+ * 
+ * <p> Copyright: Carlos Hernandez © 2024 </p>
+ * 
+ * @author Carlos Hernandez
+ * 
+ * @version 1.0.0	2024-10-09 Updated for Phase 1
+ * 
+ */
 class DatabaseHelper {
 
 	// JDBC driver name and database URL 
@@ -571,6 +582,7 @@ class DatabaseHelper {
 	    }
 	}
 
+	// Command line display Users. Using for debug purposes.
 	public void displayUsersByUser() throws UnsupportedEncodingException, Exception {
 	    String sql = "SELECT users.id, users.email, users.username, users.hashedPassword, users.randSalt, "
 	               + "GROUP_CONCAT(roles.role_name SEPARATOR ', ') AS roles, users.firstName "

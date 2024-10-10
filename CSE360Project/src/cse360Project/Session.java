@@ -3,7 +3,25 @@ package cse360Project;
 import java.util.ArrayList;
 import java.util.List;
 
+/*******
+ * <p> Session Class </p>
+ * 
+ * <p> Description: A session class which keeps track of the current session and which user is logged in.  </p>
+ * 
+ * <p> Copyright: Carlos Hernandez © 2024 </p>
+ * 
+ * @author Carlos Hernandez
+ * 
+ * @version 1.0.0	2024-10-09 Updated for Phase 1
+ * 
+ */
+
 public class Session {
+	/**********************************************************************************************
+
+	Attributes
+	
+	**********************************************************************************************/
 	private static Session instance;
 	private int userId;
 	private String email;
@@ -16,12 +34,19 @@ public class Session {
 	private List<String> invitedRoles;
 	private boolean OTPUsed;
 	
+	/**********************************************************************************************
+
+	Constructors
+	
+	**********************************************************************************************/
+	
 	// empty constructor
 	private Session() 		
 	{
 		roles = new ArrayList<>();
 	}
 	
+	// constructor with 'guaranteed values'
 	private Session(int userId, String username) 
 	{
 		this.userId = userId;
@@ -37,7 +62,11 @@ public class Session {
 		return instance;
 	}
 
+	/**********************************************************************************************
+
+	Methods
 	
+	**********************************************************************************************/
 	// method to clear session
 	public void clear()
 	{
@@ -51,8 +80,14 @@ public class Session {
 		this.email = null;
 	}
 	
-	// getters and setters
 
+	/**********************************************************************************************
+
+	Getters and Setters
+	
+	**********************************************************************************************/
+	// 'set' multiple values when getting them. Either the required ones, or the ones when they update with additional details
+	// required details set user session
 	public void setUser(int userId, String username, List<String> roles)
 	{
 		this.userId = userId;
@@ -60,6 +95,7 @@ public class Session {
 		this.roles = roles;
 	}
 	
+	// additional details set user session
 	public void setUser(int userId, String username, String email, String firstName, String lastName, String preferredName, List<String> roles) {
 	    this.userId = userId;
 	    this.username = username;
@@ -132,7 +168,7 @@ public class Session {
 
 	public List<String> getRoleNames() {
 	    if (roles == null) {
-	        return new ArrayList<>(); 
+	        return new ArrayList<>(); // prevents a iterable error when this is null 
 	    }
 	    return roles;
 	}
