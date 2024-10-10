@@ -130,12 +130,6 @@ public class App extends Application {
         primaryStage.show();
     }
 
-    // Method to check if the invite code is valid
-    private boolean isInviteCodeValid(String inviteCode) {
-        // TODO: 
-        return inviteCode != null && !inviteCode.trim().isEmpty(); // Example validation
-    }
-
     // Method to show an alert for invalid invite codes
     private void showAlert(String message) {
         Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -146,10 +140,8 @@ public class App extends Application {
     }
     
     /***
-     * Very basic boolean login that just prints to the command line. 
-     * TODO: Implement auth and current session logic to actually login a user.
-     * @throws Exception 
-     * **/
+     * method to dictate flow of login. Logic as follows: Login or OTP? > Multiple Roles? > Admin?
+     ***/ 
     public void loginFlow(String username, String password, Stage primaryStage) throws Exception {
         if (databaseHelper.login(username, password)) {
             // Check if OTP was just used
@@ -281,7 +273,7 @@ public class App extends Application {
 
     
   
-    
+   // Show the registration page 
     public void showRegistrationPage(Stage stage) {
         stage.setTitle("Registration");
 
