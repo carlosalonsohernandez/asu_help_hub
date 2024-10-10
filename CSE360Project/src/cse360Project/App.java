@@ -34,6 +34,19 @@ import java.util.Optional;
 
 import javafx.scene.layout.GridPane;
 
+/*******
+ * <p> App Class </p>
+ * 
+ * <p> Description: An evaluation class which works to verify/evaluate different passwords. </p>
+ * 
+ * <p> Copyright: Carlos Hernandez © 2024 </p>
+ * 
+ * @author Carlos Hernandez
+ * 
+ * @version 1.0.0	2024-10-09 Updated for Phase 1
+ * 
+ */
+
 public class App extends Application {
 
 	private static final DatabaseHelper databaseHelper = new DatabaseHelper();
@@ -143,6 +156,13 @@ public class App extends Application {
      * **/
     public void loginFlow(String username, String password, Stage primaryStage) throws Exception {
         if (databaseHelper.login(username, password)) {
+            // Check if OTP was just used
+            if (Session.getInstance().getOTPUsed()) {
+                showResetPassword(primaryStage); // Show the reset password page
+                return; // Exit the login flow
+            }
+
+            // Continue with the regular flow
             if (Session.getInstance().getFirstName() != null) {
                 List<String> roles = Session.getInstance().getRoleNames();
 
@@ -163,11 +183,74 @@ public class App extends Application {
                 showFinishSetup(primaryStage);
             }
         } else {
+        	showAlert("Invalid credentials. Not logged in.");
             System.out.println("not logged in");
         }
     }
 
-    // Method to show a popup for role selection
+    private void showResetPassword(Stage stage) {
+        stage.setTitle("Update Password");
+
+        // GridPane layout with padding
+        GridPane gridPane = new GridPane();
+        gridPane.setPadding(new Insets(10)); // Adds padding to avoid elements near edges
+        gridPane.setHgap(10); // Horizontal spacing between elements
+        gridPane.setVgap(10); // Vertical spacing between elements
+
+        Label usernameLabel = new Label("Username:");
+        // Display the username from the session
+        Label usernameField = new Label(Session.getInstance().getUsername());
+
+        Label passwordLabel = new Label("New Password:");
+        PasswordField passwordField = new PasswordField();
+
+        Label passwordLabel2 = new Label("Confirm Password:");
+        PasswordField passwordField2 = new PasswordField();
+
+        // Warning label for password mismatch (initially invisible)
+        Label warningLabel = new Label("Passwords must match.");
+        warningLabel.setTextFill(Color.RED);
+        warningLabel.setVisible(false); // Hide the label initially
+
+        // Update Button
+        Button updateButton = new Button("Update Password");
+
+        updateButton.setOnAction(e -> {
+            // Check if passwords match
+            if (passwordField.getText().equals(passwordField2.getText())) {
+                // Hide the warning label if passwords match
+                warningLabel.setVisible(false);
+                
+                try {
+                    // Update the user's password in the database
+                    databaseHelper.updateUserPassword(Session.getInstance().getUsername(), passwordField.getText());
+                    System.out.println("Password updated successfully!");
+                    start(stage); // Optionally, redirect to another page or refresh
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                }
+            } else {
+                // Show the warning label if passwords do not match
+                warningLabel.setVisible(true);
+            }
+        });
+
+        // Add elements to the GridPane
+        gridPane.add(usernameLabel, 0, 1);
+        gridPane.add(usernameField, 1, 1);
+        gridPane.add(passwordLabel, 0, 2);
+        gridPane.add(passwordField, 1, 2);
+        gridPane.add(passwordLabel2, 0, 3);
+        gridPane.add(passwordField2, 1, 3);
+        gridPane.add(updateButton, 1, 4);
+        gridPane.add(warningLabel, 1, 5); // Add warning label below the Update button
+
+        // Set the Scene and show the Stage
+        Scene scene = new Scene(gridPane, 400, 300); // Width and Height
+        stage.setScene(scene);
+    }
+
+	// Method to show a popup for role selection
     private void showRoleSelectionPopup(List<String> roles, Stage primaryStage) {
         Dialog<String> dialog = new Dialog<>();
         dialog.setTitle("Select Role");
@@ -459,14 +542,37 @@ public class App extends Application {
         });
         gridPane.add(resetPasswordButton, 0, 2);
 
-        // Delete User button
+
+     // Delete User button
         Button deleteUserButton = new Button("Delete User");
         deleteUserButton.setOnAction(e -> {
             List<String> selectedUser = tableView.getSelectionModel().getSelectedItem();
             if (selectedUser != null) {
-               databaseHelper.deleteUserAccount(selectedUser.get(0)); // Assuming username is at index 0
-               // refresh view to update table
-               showManageUsersPage(stage);
+                // Create a confirmation dialog
+                Alert confirmationAlert = new Alert(Alert.AlertType.CONFIRMATION);
+                confirmationAlert.setTitle("Confirm Deletion");
+                confirmationAlert.setHeaderText(null);
+                confirmationAlert.setContentText("Are you sure you want to delete this user?");
+
+                // Add custom buttons for Yes and No
+                ButtonType yesButton = new ButtonType("Yes");
+                ButtonType noButton = new ButtonType("No");
+                confirmationAlert.getButtonTypes().setAll(yesButton, noButton);
+
+                // Show the confirmation dialog and wait for a response
+                Optional<ButtonType> result = confirmationAlert.showAndWait();
+                if (result.isPresent() && result.get() == yesButton) {
+                    // User confirmed deletion
+                    databaseHelper.deleteUserAccount(selectedUser.get(0)); // Assuming username is at index 0
+                    // Refresh view to update table
+                    showManageUsersPage(stage);
+                } else {
+                    // User canceled the deletion, no action needed
+                    System.out.println("Deletion aborted.");
+                }
+            } else {
+                // Handle the case where no user is selected
+                System.out.println("No user selected for deletion.");
             }
         });
         gridPane.add(deleteUserButton, 1, 2);

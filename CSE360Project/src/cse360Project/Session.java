@@ -14,6 +14,7 @@ public class Session {
 	private String preferredName;
 	private List<String> roles;
 	private List<String> invitedRoles;
+	private boolean OTPUsed;
 	
 	// empty constructor
 	private Session() 		
@@ -154,4 +155,12 @@ public class Session {
     	}
         this.invitedRoles = invitedRoles;
     }
+
+	public boolean getOTPUsed() {
+		return OTPUsed;
+	}
+
+	public void setOTPUsed(boolean oTPJustUsed) {
+		OTPUsed = oTPJustUsed;
+	}
 }

@@ -3,6 +3,9 @@ import java.io.UnsupportedEncodingException;
 import java.sql.*;
 
 
+import java.sql.Timestamp;
+import java.util.Date;
+import java.util.Random;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -57,7 +60,10 @@ class DatabaseHelper {
 		        + "lastName VARCHAR(255), "
 		        + "preferredName VARCHAR(255), " 
 		        + "hashedPassword VARCHAR(255) NOT NULL, "
-		        + "randSalt VARCHAR(255) NOT NULL)";
+		        + "randSalt VARCHAR(255) NOT NULL, "
+		        + "otp VARCHAR(10), " // Column for storing the one-time password
+		        + "otp_expiration TIMESTAMP" // Column for storing the expiration time of the OTP
+		        + ")";
 		statement.execute(userTable);
 		
 		// Create topics table
@@ -324,60 +330,93 @@ class DatabaseHelper {
 	    }
 	}
 	
-	public boolean login(String username, String password) throws Exception {
+	public boolean login(String username, String passwordOrOtp) throws Exception {
 	    String query = "SELECT * FROM users WHERE username = ?";
 	    String getUserRoles = "SELECT r.role_name FROM roles r "
 	                        + "JOIN user_roles ur ON r.id = ur.role_id "
 	                        + "WHERE ur.user_id = ?";
-	    
+
 	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
 	        pstmt.setString(1, username);
 
 	        try (ResultSet rs = pstmt.executeQuery()) {
 	            if (rs.next()) {
-	                // Retrieve the salt and hashed password from the database
+	                // Attempt to log in with the password
 	                String hashedPassword = rs.getString("hashedPassword");
 	                String randSalt = rs.getString("randSalt");
 
 	                // Use your password verification method to compare
-	                boolean isValidPassword = Password.verifyPassword(password, 
+	                boolean isValidPassword = Password.verifyPassword(passwordOrOtp, 
 	                                        Base64.getDecoder().decode(randSalt), 
 	                                        Base64.getDecoder().decode(hashedPassword));
 
 	                if (isValidPassword) {
-	                    // Retrieve user details
-	                    int userId = rs.getInt("id");
-	                    String email = rs.getString("email");
-	                    String firstName = rs.getString("firstName");
-	                    String lastName = rs.getString("lastName");
-	                    String preferredName = rs.getString("preferredName");
-
-	                    // Fetch user roles from user_roles tablex
-	                    List<String> roles = new ArrayList<>();
-	                    try (PreparedStatement pstmtRoles = connection.prepareStatement(getUserRoles)) {
-	                        pstmtRoles.setInt(1, userId);
-	                        try (ResultSet rsRoles = pstmtRoles.executeQuery()) {
-	                            while (rsRoles.next()) {
-	                                roles.add(rsRoles.getString("role_name"));
-	                            }
-	                        }
-	                    }
-
-	                    // Set user session
-	                    if (firstName != null) {
-	                        System.out.println("set up!");
-	                        Session.getInstance().setUser(userId, username, email, firstName, lastName, preferredName, roles);
-	                    } else {
-	                        // Only guaranteed values
-	                        System.out.println("missing set up");
-	                        Session.getInstance().setUser(userId, username, roles);
-	                    }
+	                    // Password login successful; proceed to set user session
+	                    setUserSession(rs);
+	                    Session.getInstance().setOTPUsed(false);
 	                    return true; // Successful login
+	                } else {
+	                    // Check if the user is trying to log in with an OTP
+	                    String storedOtp = rs.getString("otp");
+	                    Timestamp otpExpiration = rs.getTimestamp("otp_expiration");
+
+	                    // Verify the OTP and check for expiration
+	                    if (storedOtp != null && storedOtp.equals(passwordOrOtp) && 
+	                        (otpExpiration != null && otpExpiration.after(new Timestamp(System.currentTimeMillis())))) {
+	                        // Clear the OTP to make it one-time use
+	                        clearOtp(username);
+
+	                        // Proceed to set user session
+	                        setUserSession(rs);
+	                        Session.getInstance().setOTPUsed(true);
+	                        return true; // Successful OTP login
+	                    }
 	                }
 	            }
 	        }
 	    }
 	    return false; // Invalid login
+	}
+
+	private void setUserSession(ResultSet rs) throws SQLException {
+	    // Retrieve user details
+	    int userId = rs.getInt("id");
+	    String email = rs.getString("email");
+	    String firstName = rs.getString("firstName");
+	    String lastName = rs.getString("lastName");
+	    String preferredName = rs.getString("preferredName");
+
+	    // Fetch user roles from user_roles table
+	    List<String> roles = new ArrayList<>();
+	    String getUserRoles = "SELECT r.role_name FROM roles r "
+	                        + "JOIN user_roles ur ON r.id = ur.role_id "
+	                        + "WHERE ur.user_id = ?";
+	    
+	    try (PreparedStatement pstmtRoles = connection.prepareStatement(getUserRoles)) {
+	        pstmtRoles.setInt(1, userId);
+	        try (ResultSet rsRoles = pstmtRoles.executeQuery()) {
+	            while (rsRoles.next()) {
+	                roles.add(rsRoles.getString("role_name"));
+	            }
+	        }
+	    }
+
+	    // Set user session
+	    if (firstName != null) {
+	        Session.getInstance().setUser(userId, rs.getString("username"), email, firstName, lastName, preferredName, roles);
+	    } else {
+	        // Only guaranteed values
+	        System.out.println("missing set up");
+	        Session.getInstance().setUser(userId, rs.getString("username"), roles);
+	    }
+	}
+
+	private void clearOtp(String username) throws SQLException {
+	    String clearOtpSql = "UPDATE users SET otp = NULL, otp_expiration = NULL WHERE username = ?";
+	    try (PreparedStatement clearOtpStmt = connection.prepareStatement(clearOtpSql)) {
+	        clearOtpStmt.setString(1, username);
+	        clearOtpStmt.executeUpdate();
+	    }
 	}
 	
 	public boolean doesUserExist(String email) {
@@ -429,10 +468,46 @@ class DatabaseHelper {
 	    }
 	}
 	
+
 	public void resetUserPassword(String username) throws Exception {
-	    String selectUserSql = "SELECT id, randSalt, hashedPassword FROM users WHERE username = ?";
+	    String selectUserSql = "SELECT id FROM users WHERE username = ?";
 	    String newPassword = generateRandomPassword(); // Generate a new password
 	    Password pass = new Password(newPassword);
+	    
+	    // Generate OTP and expiration time
+	    String otp = generateOneTimePassword();
+	    Timestamp expirationTime = new Timestamp(System.currentTimeMillis() + (24 * 3600000)); // 24 hour expiration
+
+	    try (PreparedStatement selectStmt = connection.prepareStatement(selectUserSql)) {
+	        selectStmt.setString(1, username);
+	        ResultSet rs = selectStmt.executeQuery();
+
+	        if (rs.next()) {
+	            int userId = rs.getInt("id");
+
+	            // Update the user's OTP and expiration time
+	            String updatePasswordSql = "UPDATE users SET hashedPassword = ?, randSalt = ?, otp = ?, otp_expiration = ? WHERE id = ?";
+	            try (PreparedStatement updateStmt = connection.prepareStatement(updatePasswordSql)) {
+	                updateStmt.setString(1, Base64.getEncoder().encodeToString(pass.getHashedPass()));
+	                updateStmt.setString(2, Base64.getEncoder().encodeToString(pass.getSalt())); // Generate a new salt if necessary
+	                updateStmt.setString(3, otp);
+	                updateStmt.setTimestamp(4, expirationTime);
+	                updateStmt.setInt(5, userId);
+	                updateStmt.executeUpdate();
+	            }
+	            System.out.println("Password reset successfully for user: " + username);
+	            // Optionally, send the OTP to the user via email or display it
+	        } else {
+	            System.out.println("User not found: " + username);
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	    }
+	}
+	
+	public void updateUserPassword(String username, String newPassword) throws Exception {
+	    String selectUserSql = "SELECT id FROM users WHERE username = ?";
+	    Password pass = new Password(newPassword); // Create Password instance with the new password
 
 	    try (PreparedStatement selectStmt = connection.prepareStatement(selectUserSql)) {
 	        selectStmt.setString(1, username);
@@ -445,18 +520,29 @@ class DatabaseHelper {
 	            String updatePasswordSql = "UPDATE users SET hashedPassword = ?, randSalt = ? WHERE id = ?";
 	            try (PreparedStatement updateStmt = connection.prepareStatement(updatePasswordSql)) {
 	                updateStmt.setString(1, Base64.getEncoder().encodeToString(pass.getHashedPass()));
-	                updateStmt.setString(2, Base64.getEncoder().encodeToString(pass.getSalt())); // You may want to generate a new salt here
+	                updateStmt.setString(2, Base64.getEncoder().encodeToString(pass.getSalt())); // Generate a new salt if necessary
 	                updateStmt.setInt(3, userId);
 	                updateStmt.executeUpdate();
 	            }
-	            System.out.println("Password reset successfully for user: " + username);
-	            // Optionally, send the new password to the user via email or display it
+	            System.out.println("Password updated successfully for user: " + username);
+	            // Optionally, notify the user about the successful password change
 	        } else {
 	            System.out.println("User not found: " + username);
 	        }
 	    } catch (SQLException e) {
 	        e.printStackTrace();
 	    }
+	}
+
+	private String generateOneTimePassword() {
+	    int length = 6; // Length of the OTP
+	    Random random = new Random();
+	    StringBuilder otp = new StringBuilder();
+	    for (int i = 0; i < length; i++) {
+	        otp.append(random.nextInt(10)); // Append random digit
+	    }
+	    System.out.println("OTP Generated: " + otp.toString());
+	    return otp.toString();
 	}
 	
 	// Method to generate a random password
