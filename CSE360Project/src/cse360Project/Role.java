@@ -1,7 +1,5 @@
 package cse360Project;
 
-import cse360Project.User;
-
 /*******
  * <p> User Class </p>
  * 
