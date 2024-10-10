@@ -62,6 +62,10 @@ public class User {
         this(email, username, oneTimeFlag, firstName, null, lastName, preferredName, roles);
     }
     
+	public User(String string, String string2, boolean b, String string3, String string4, Role role, String string5) {
+		// TODO Auto-generated constructor stub
+	}
+
 	/**********************************************************************************************
 
 	Methods
