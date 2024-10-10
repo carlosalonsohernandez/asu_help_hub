@@ -6,10 +6,13 @@ import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceBox;
+import javafx.scene.control.Dialog;
 import javafx.stage.Stage;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TableColumn;
@@ -18,6 +21,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.layout.HBox;
+import javafx.scene.control.ButtonBar;
 
 import java.io.UnsupportedEncodingException;
 import java.sql.Connection;
@@ -26,6 +30,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import javafx.scene.layout.GridPane;
 
@@ -136,33 +141,64 @@ public class App extends Application {
      * TODO: Implement auth and current session logic to actually login a user.
      * @throws Exception 
      * **/
-    public void loginFlow(String username, String password, Stage primaryStage) throws Exception
-    {
-    	if(databaseHelper.login(username, password)) {
-    		if(Session.getInstance().getFirstName() != null)
-    		{
-    			if(Session.getInstance().getRoleNames().contains("admin"))
-    			{
-    				// admin
-    				showAdminHomePage(primaryStage);
-    			}
-    			else
-    			{
-        			showStudentAndInstructorHomePage(primaryStage);
+    public void loginFlow(String username, String password, Stage primaryStage) throws Exception {
+        if (databaseHelper.login(username, password)) {
+            if (Session.getInstance().getFirstName() != null) {
+                List<String> roles = Session.getInstance().getRoleNames();
 
-    			}
-    		}
-    		else
-    		{
-    			// finish your account login
-    			showFinishSetup(primaryStage);
-    			
-    		}
-    	} else {
-    		System.out.println("notlogged");
-    	}
-    	
+                if (roles.contains("admin")) {
+                    if (roles.size() > 1) {
+                        // User has multiple roles, show popup to select a role
+                        showRoleSelectionPopup(roles, primaryStage);
+                    } else {
+                        // Only admin role
+                        showAdminHomePage(primaryStage);
+                    }
+                } else {
+                    // User is not an admin, go to student/instructor home page
+                    showStudentAndInstructorHomePage(primaryStage);
+                }
+            } else {
+                // Finish your account login
+                showFinishSetup(primaryStage);
+            }
+        } else {
+            System.out.println("not logged in");
+        }
     }
+
+    // Method to show a popup for role selection
+    private void showRoleSelectionPopup(List<String> roles, Stage primaryStage) {
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle("Select Role");
+        dialog.setHeaderText("Please select your role for this session:");
+
+        ListView<String> roleListView = new ListView<>();
+        roleListView.getItems().addAll(roles);
+
+        VBox vbox = new VBox(new Label("Select a role:"), roleListView);
+        dialog.getDialogPane().setContent(vbox);
+
+        ButtonType loginButtonType = new ButtonType("Login", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == loginButtonType) {
+                return roleListView.getSelectionModel().getSelectedItem();
+            }
+            return null;
+        });
+
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(selectedRole -> {
+            if (selectedRole.equals("admin")) {
+                showAdminHomePage(primaryStage);
+            } else {
+                showStudentAndInstructorHomePage(primaryStage);
+            }
+        });
+    }
+
     
   
     
