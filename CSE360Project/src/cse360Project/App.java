@@ -134,8 +134,16 @@ public class App extends Application {
     	if(databaseHelper.login(username, password)) {
     		if(Session.getInstance().getFirstName() != null)
     		{
-    			//continue to logout screen
-    			showStudentAndInstructorHomePage(primaryStage);
+    			if(Session.getInstance().getRoleNames().contains("admin"))
+    			{
+    				// admin
+    				showAdminHomePage(primaryStage);
+    			}
+    			else
+    			{
+        			showStudentAndInstructorHomePage(primaryStage);
+
+    			}
     		}
     		else
     		{
@@ -219,8 +227,47 @@ public class App extends Application {
         stage.setScene(scene);
     }
     
+    public void showAdminHomePage(Stage stage)
+    {
+    	 stage.setTitle("Home");
+         
+         // GridPane layout with padding
+         GridPane gridPane = new GridPane();
+         gridPane.setPadding(new Insets(10)); // Adds padding to avoid elements near edges
+         gridPane.setHgap(10); // Horizontal spacing between elements
+         gridPane.setVgap(10); // Vertical spacing between elements
+         
+         Label helloLabel = new Label("Welcome and hello admin " + Session.getInstance().getFirstName() + " " + Session.getInstance().getLastName() + "!");
+
+         // logout 
+         Button logoutButton = new Button("Logout");
+         
+         logoutButton.setOnAction(e -> {
+         	Session.getInstance().clear();
+         	try {
+ 				start(stage);
+ 			} catch (UnsupportedEncodingException e1) {
+ 				// TODO Auto-generated catch block
+ 				e1.printStackTrace();
+ 			} catch (Exception e1) {
+ 				// TODO Auto-generated catch block
+ 				e1.printStackTrace();
+ 			}
+
+         });
+
+         // Add elements to the GridPane
+
+         gridPane.add(helloLabel, 0, 1);
+         gridPane.add(logoutButton, 1, 2);
+
+         // Set the Scene and show the Stage
+         Scene scene = new Scene(gridPane, 400, 300); // Width and Height
+         stage.setScene(scene);
+    }
+    
     public void showStudentAndInstructorHomePage(Stage stage) {
-        stage.setTitle("Registration");
+        stage.setTitle("Home");
         
         // GridPane layout with padding
         GridPane gridPane = new GridPane();
@@ -251,9 +298,13 @@ public class App extends Application {
 
         gridPane.add(helloLabel, 0, 1);
         gridPane.add(logoutButton, 1, 2);
+        
+        // use scroll pane for potentially long list of users
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setContent(gridPane);
 
         // Set the Scene and show the Stage
-        Scene scene = new Scene(gridPane, 400, 300); // Width and Height
+        Scene scene = new Scene(scrollPane, 400, 300); // Width and Height
         stage.setScene(scene);
     }
     
