@@ -266,6 +266,60 @@ public class App extends Application {
          stage.setScene(scene);
     }
     
+    public void showAdminInvitePage(Stage stage) {
+        stage.setTitle("Generate Invitation");
+
+        // GridPane layout
+        GridPane gridPane = new GridPane();
+        gridPane.setPadding(new Insets(10));
+        gridPane.setHgap(10);
+        gridPane.setVgap(10);
+
+        // Role dropdown
+        Label roleLabel = new Label("Select Role:");
+        ChoiceBox<String> roleChoiceBox = new ChoiceBox<>();
+        roleChoiceBox.getItems().addAll("student", "admin", "instructor");
+
+        // Text field for the invitation code
+        Label inviteCodeLabel = new Label("Enter Invitation Code:");
+        TextField inviteCodeField = new TextField();
+
+        // Generate button
+        Button generateButton = new Button("Generate Invitation");
+        Label messageLabel = new Label();
+
+        generateButton.setOnAction(e -> {
+            String selectedRole = roleChoiceBox.getValue();
+            String inviteCode = inviteCodeField.getText();
+            if (selectedRole != null && !inviteCode.isEmpty()) {
+                try {
+                    // Store invitation code with selected role in the database
+                    databaseHelper.storeInvite(inviteCode, selectedRole);
+                    messageLabel.setText("Invitation generated successfully!");
+                    messageLabel.setTextFill(Color.GREEN);
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                    messageLabel.setText("Error generating invitation.");
+                    messageLabel.setTextFill(Color.RED);
+                }
+            } else {
+                messageLabel.setText("Please select a role and enter a valid invite code.");
+                messageLabel.setTextFill(Color.RED);
+            }
+        });
+
+        // Add elements to grid
+        gridPane.add(roleLabel, 0, 0);
+        gridPane.add(roleChoiceBox, 1, 0);
+        gridPane.add(inviteCodeLabel, 0, 1);
+        gridPane.add(inviteCodeField, 1, 1);
+        gridPane.add(generateButton, 1, 2);
+        gridPane.add(messageLabel, 1, 3);
+
+        Scene scene = new Scene(gridPane, 400, 250);
+        stage.setScene(scene);
+    }
+    
     public void showStudentAndInstructorHomePage(Stage stage) {
         stage.setTitle("Home");
         
