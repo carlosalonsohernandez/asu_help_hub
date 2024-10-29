@@ -2,11 +2,13 @@ package cse360Project;
 
 import java.security.MessageDigest;
 import java.security.SecureRandom;
+import java.util.Base64;
+import java.util.Random;
 
 /*******
- * <p> App Class </p>
+ * <p> Password Class </p>
  * 
- * <p> Description: A password class which encapsulates a lot of the functionality of hashing and validating passwords.  </p>
+ * <p> Description: A password utility class which encapsulates a lot of the functionality of hashing and validating passwords.  </p>
  * 
  * <p> Copyright: Carlos Hernandez © 2024 </p>
  * 
@@ -91,6 +93,29 @@ public class Password {
             throw new Exception("Error during password verification: " + e.getMessage());
         }
     }
+    
+    // generate a one time password
+	public static String generateOneTimePassword() {
+	    int length = 6; // Length of the OTP
+	    Random random = new Random();
+	    StringBuilder otp = new StringBuilder();
+	    for (int i = 0; i < length; i++) {
+	        otp.append(random.nextInt(10)); // Append random digit
+	    }
+	    System.out.println("OTP Generated: " + otp.toString());
+	    return otp.toString();
+	}
+	
+	// Method to generate a random password
+	public static String generateRandomPassword() {
+	    byte[] randomBytes = new byte[16];
+	    SecureRandom random = new SecureRandom();
+	    random.nextBytes(randomBytes);
+	    return Base64.getUrlEncoder().withoutPadding().encodeToString(randomBytes).substring(0, 16); // Return a substring to ensure length
+	}
+    
+    
+    // getters and setters
 
     public byte[] getSalt() {
         return this.randSalt;
