@@ -45,6 +45,7 @@ public class UserService {
     
     public boolean login(String username, String passwordOrOtp) throws Exception {
         User user = userRepository.getUserByUsername(username);
+        System.out.println(user != null ? user.toString(): "null!E#");
         if (user == null) {
             return false; // User not found
         }
@@ -91,6 +92,7 @@ public class UserService {
     
     public void resetUserPassword(String username) throws Exception {
         Integer userId = userRepository.getUserIdByUsername(username);
+        System.out.println("Updating with user Id: " + userId );
         if (userId == null) {
             System.out.println("User not found: " + username);
             return; // User not found, exit the method
@@ -114,6 +116,16 @@ public class UserService {
         // Optionally, send the OTP to the user via email or display it
     }
     
+    // open endpoint to repo and handle additional password logic
+	public void updateUserPassword(User user, String newPassword) throws Exception {
+	    String query = "UPDATE users SET hashedPassword = ?, randSalt = ? WHERE username = ?";
+	    Password pass = new Password(newPassword);
+	    
+	    userRepository.updateUserPassword(user.getUsername(), pass.getHashedPass(), pass.getSalt());
+	    
+	}
+	
+	
     // add or remove a role
     public void manageUserRole(int userId, String role, boolean addRole) throws Exception {
         int roleId = roleRepository.getRoleIdByName(role); // Get the role ID from the RoleRepository

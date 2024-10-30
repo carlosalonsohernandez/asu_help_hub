@@ -96,9 +96,13 @@ public class App extends Application {
             System.out.println(usernameField.getText());
             try {
                 loginFlow(usernameField.getText(), passwordField.getText(), primaryStage);
-                System.out.println("Hello " + Session.getInstance().getCurrentUser().getFirstName());
-                for (Role role : roleRepo.getRolesForUser(Session.getInstance().getCurrentUser().getId())) {
-                    System.out.println("Role: " + role);
+                System.out.println("Hello " + (Session.getInstance().getCurrentUser() != null ? Session.getInstance().getCurrentUser().getFirstName(): "null"));
+                //System.out.println("Hello " + Session.getInstance().getCurrentUser().getFirstName()); 
+                if(Session.getInstance().getCurrentUser() != null)
+                {
+                    for (Role role : roleRepo.getRolesForUser(Session.getInstance().getCurrentUser().getId())) {
+                        System.out.println("Role: " + role);
+                    }
                 }
             } catch (Exception e1) {
                 e1.printStackTrace();
@@ -236,7 +240,7 @@ public class App extends Application {
                 
                 try {
                     // Update the user's password in the database
-                    userRepo.updateUserPassword(Session.getInstance().getCurrentUser(), passwordField.getText());
+                    userService.updateUserPassword(Session.getInstance().getCurrentUser(), passwordField.getText());
                     System.out.println("Password updated successfully!");
                     start(stage); // Optionally, redirect to another page or refresh
                 } catch (Exception e1) {

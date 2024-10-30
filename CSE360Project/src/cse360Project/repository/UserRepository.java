@@ -68,18 +68,20 @@ public class UserRepository {
 	        e.printStackTrace();
 	    }
 	}
-	
-	// Update user password using a User object
-	public void updateUserPassword(User user, String newPassword) throws SQLException {
+
+	// Update user password using a hashed password and randSalt
+	public void updateUserPassword(String username, byte[] hashedPassword, byte[] randSalt) throws SQLException {
 	    String query = "UPDATE users SET hashedPassword = ?, randSalt = ? WHERE username = ?";
 	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-	        // Assuming user already has the hashed password and salt set
-	        pstmt.setString(1, Base64.getEncoder().encodeToString(user.getHashedPassword().getBytes()));
-	        pstmt.setString(2, Base64.getEncoder().encodeToString(user.getRandSalt().getBytes()));
-	        pstmt.setString(3, user.getUsername());
-	        pstmt.executeUpdate();
+	        // Use the provided hashed password and randSalt
+	        pstmt.setString(1, Base64.getEncoder().encodeToString(hashedPassword));
+	        pstmt.setString(2, Base64.getEncoder().encodeToString(randSalt));
+	        pstmt.setString(3, username);
+	        int affected = pstmt.executeUpdate();
+
+	        System.out.println(affected + " rows affected by update pass");
 	    }
-	    System.out.println("Password updated successfully for user: " + user.getUsername());
+	    System.out.println("Password updated successfully for user: " + username);
 	}
 	
 	// Update user profile to complete using id
@@ -150,8 +152,8 @@ public class UserRepository {
 	                rs.getString("preferredName"),
 	                rs.getString("hashedPassword"), 
 	                rs.getString("randSalt"),
-	                null,
-	                null
+	                rs.getString("otp"),
+	                rs.getTimestamp("otp_expiration")
 	            );
 	        } else {
 	            return null; // or throw an exception
@@ -181,7 +183,8 @@ public class UserRepository {
             updateStmt.setString(3, otp);
             updateStmt.setTimestamp(4, expirationTime);
             updateStmt.setInt(5, userId);
-            updateStmt.executeUpdate();
+            int affected = updateStmt.executeUpdate();
+            System.out.println(affected + " rows affected!!");
         }
     }
 	
