@@ -28,6 +28,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import cse360Project.model.Role;
+import cse360Project.repository.InvitationRepository;
+import cse360Project.repository.RoleRepository;
+import cse360Project.repository.UserRepository;
+import cse360Project.service.InvitationService;
+import cse360Project.service.UserService;
 import javafx.scene.layout.GridPane;
 
 /*******
@@ -46,12 +52,27 @@ import javafx.scene.layout.GridPane;
 public class App extends Application {
 
 	private static final DatabaseHelper databaseHelper = new DatabaseHelper();
+	private static UserRepository userRepo = null;
+	private static RoleRepository roleRepo = null;
+	private static InvitationRepository inviteRepo = null;
+	private static UserService userService = null;
+	private static InvitationService inviteService = null;
     // Entry point for JavaFX application
     @Override
     public void start(Stage primaryStage) throws UnsupportedEncodingException, Exception {
         // Title for the window
         databaseHelper.connectToDatabase();
         String s = databaseHelper.isDatabaseEmpty() ? "empty" : "not empty";
+        
+        // establish necessary repos
+        userRepo = new UserRepository(databaseHelper.getConnection());
+        roleRepo = new RoleRepository(databaseHelper.getConnection());
+        inviteRepo = new InvitationRepository(databaseHelper.getConnection());
+        
+        // establish services
+        userService = new UserService(userRepo, roleRepo);
+        inviteService = new InvitationService(inviteRepo, roleRepo);
+        
         databaseHelper.displayUsersByUser();
         System.out.println(s);
         primaryStage.setTitle("ASU Help Hub");
@@ -75,9 +96,13 @@ public class App extends Application {
             System.out.println(usernameField.getText());
             try {
                 loginFlow(usernameField.getText(), passwordField.getText(), primaryStage);
-                System.out.println("Hello " + Session.getInstance().getFirstName());
-                for (String role : Session.getInstance().getRoleNames()) {
-                    System.out.println("Role: " + role);
+                System.out.println("Hello " + (Session.getInstance().getCurrentUser() != null ? Session.getInstance().getCurrentUser().getFirstName(): "null"));
+                //System.out.println("Hello " + Session.getInstance().getCurrentUser().getFirstName()); 
+                if(Session.getInstance().getCurrentUser() != null)
+                {
+                    for (Role role : roleRepo.getRolesForUser(Session.getInstance().getCurrentUser().getId())) {
+                        System.out.println("Role: " + role);
+                    }
                 }
             } catch (Exception e1) {
                 e1.printStackTrace();
@@ -94,7 +119,7 @@ public class App extends Application {
 				} else {
 				    // Check the invite code
 				    String inviteCode = inviteCodeField.getText();
-				    if (databaseHelper.validateInvitationCode(inviteCode)) {
+				    if (inviteService.validateInvitationCode(inviteCode)) {
 				        // Proceed to registration if the invite code is valid
 				        showRegistrationPage(primaryStage);
 				    } else {
@@ -143,18 +168,21 @@ public class App extends Application {
      * method to dictate flow of login. Logic as follows: Login or OTP? > Multiple Roles? > Admin?
      ***/ 
     public void loginFlow(String username, String password, Stage primaryStage) throws Exception {
-        if (databaseHelper.login(username, password)) {
+        if (userService.login(username, password)) {
             // Check if OTP was just used
-            if (Session.getInstance().getOTPUsed()) {
+            if (Session.getInstance().isOTPUsed()) {
                 showResetPassword(primaryStage); // Show the reset password page
                 return; // Exit the login flow
             }
 
             // Continue with the regular flow
-            if (Session.getInstance().getFirstName() != null) {
-                List<String> roles = Session.getInstance().getRoleNames();
+            if (Session.getInstance().getCurrentUser().getFirstName() != null) {
+                List<Role> roleList = roleRepo.getRolesForUser(Session.getInstance().getCurrentUser().getId());
+                
+                List<String> roles = roleList.stream().map(Role::getRoleName).toList();
+                
 
-                if (roles.contains("admin")) {
+                if (roles.stream().anyMatch(role -> role.equalsIgnoreCase("admin"))) {
                     if (roles.size() > 1) {
                         // User has multiple roles, show popup to select a role
                         showRoleSelectionPopup(roles, primaryStage);
@@ -188,7 +216,7 @@ public class App extends Application {
 
         Label usernameLabel = new Label("Username:");
         // Display the username from the session
-        Label usernameField = new Label(Session.getInstance().getUsername());
+        Label usernameField = new Label(Session.getInstance().getCurrentUser().getUsername());
 
         Label passwordLabel = new Label("New Password:");
         PasswordField passwordField = new PasswordField();
@@ -212,7 +240,7 @@ public class App extends Application {
                 
                 try {
                     // Update the user's password in the database
-                    databaseHelper.updateUserPassword(Session.getInstance().getUsername(), passwordField.getText());
+                    userService.updateUserPassword(Session.getInstance().getCurrentUser(), passwordField.getText());
                     System.out.println("Password updated successfully!");
                     start(stage); // Optionally, redirect to another page or refresh
                 } catch (Exception e1) {
@@ -309,12 +337,12 @@ public class App extends Application {
                 try {
                 	if(databaseHelper.isDatabaseEmpty())
                 	{
-                    	databaseHelper.register(emailField.getText(), passwordField.getText(), List.of("admin"));
+                    	userService.register(emailField.getText(), passwordField.getText(), List.of("admin"));
                         System.out.println("User registered with admin privileges successfully!");
                 	}
                 	else
                 	{
-                    	databaseHelper.register(emailField.getText(), passwordField.getText(), Session.getInstance().getInvitedRoles());
+                    	userService.register(emailField.getText(), passwordField.getText(), Session.getInstance().getInvitedRoles());
                         System.out.println("User registered successfully!");
                 	}
                 	start(stage);
@@ -352,7 +380,7 @@ public class App extends Application {
          gridPane.setHgap(10); // Horizontal spacing between elements
          gridPane.setVgap(10); // Vertical spacing between elements
          
-         Label helloLabel = new Label("Welcome and hello admin " + Session.getInstance().getFirstName() + " " + Session.getInstance().getLastName() + "!");
+         Label helloLabel = new Label("Welcome and hello admin " + Session.getInstance().getCurrentUser().getFirstName() + " " + Session.getInstance().getCurrentUser().getLastName() + "!");
 
          // logout 
          Button logoutButton = new Button("Logout");
@@ -374,7 +402,6 @@ public class App extends Application {
          });
 
          generateInviteButton.setOnAction(e -> {
-          	Session.getInstance().clear();
           	try {
   				showAdminInvitePage(stage);
   			} catch (Exception e1) {
@@ -385,7 +412,6 @@ public class App extends Application {
           });
          
          manageUsersButton.setOnAction(e -> {
-           	Session.getInstance().clear();
            	try {
    				showManageUsersPage(stage);
    			} catch (Exception e1) {
@@ -455,7 +481,7 @@ public class App extends Application {
             if (!selectedRoles.isEmpty() && !inviteCode.isEmpty()) {
                 try {
                     // Store invitation code with selected roles in the database
-                    databaseHelper.storeInvite(inviteCode, selectedRoles);
+                    inviteRepo.storeInvite(inviteCode, selectedRoles);
                     messageLabel.setText("Invitation generated successfully with roles: " + String.join(", ", selectedRoles));
                     messageLabel.setTextFill(Color.GREEN);
                 } catch (Exception ex) {
@@ -504,7 +530,7 @@ public class App extends Application {
         gridPane.add(titleLabel, 0, 0, 2, 1); // Span two columns
 
         // Table to display user accounts
-        TableView<List<String>> tableView = new TableView<>(); // Use List<String> for raw data
+        TableView<List<String>> tableView = new TableView<>(); 
         TableColumn<List<String>, String> usernameCol = new TableColumn<>("Username");
         usernameCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(0))); // Access username
         TableColumn<List<String>, String> nameCol = new TableColumn<>("Name");
@@ -513,7 +539,7 @@ public class App extends Application {
         roleCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(2))); // Access roles
 
         tableView.getColumns().addAll(usernameCol, nameCol, roleCol);
-        databaseHelper.loadUsersIntoTable(tableView); // Load user data into the table
+        userService.loadUsersIntoTable(tableView); // Load user data into the table
         gridPane.add(tableView, 0, 1, 2, 1); // Span two columns
 
         // Reset Password button
@@ -522,7 +548,7 @@ public class App extends Application {
             List<String> selectedUser = tableView.getSelectionModel().getSelectedItem();
             if (selectedUser != null) {
                try {
-				databaseHelper.resetUserPassword(selectedUser.get(0));
+				userService.resetUserPassword(selectedUser.get(0));
 			} catch (Exception e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
@@ -552,7 +578,7 @@ public class App extends Application {
                 Optional<ButtonType> result = confirmationAlert.showAndWait();
                 if (result.isPresent() && result.get() == yesButton) {
                     // User confirmed deletion
-                    databaseHelper.deleteUserAccount(selectedUser.get(0)); // Assuming username is at index 0
+                    userRepo.deleteUserAccount(selectedUser.get(0)); // Assuming username is at index 0
                     // Refresh view to update table
                     showManageUsersPage(stage);
                 } else {
@@ -593,7 +619,7 @@ public class App extends Application {
         gridPane.setHgap(10); // Horizontal spacing between elements
         gridPane.setVgap(10); // Vertical spacing between elements
         
-        Label helloLabel = new Label("Welcome and hello " + Session.getInstance().getFirstName() + " " + Session.getInstance().getLastName() + "!");
+        Label helloLabel = new Label("Welcome and hello " + Session.getInstance().getCurrentUser().getFirstName() + " " + Session.getInstance().getCurrentUser().getLastName() + "!");
 
         // logout 
         Button logoutButton = new Button("Logout");
@@ -656,9 +682,10 @@ public class App extends Application {
         Button updateButton = new Button("Update");
         
         updateButton.setOnAction(e -> {
-            System.out.println("Register clicked");
+            System.out.println("Update clicked");
             try {
-				databaseHelper.updateUserById(Session.getInstance().getUserId(), emailField.getText(), firstNameField.getText(), lastNameField.getText(), preferredNameField.getText());
+				userRepo.updateUserById(Session.getInstance().getCurrentUser().getId(), emailField.getText(), firstNameField.getText(), middleNameField.getText(), lastNameField.getText(), preferredNameField.getText());
+				System.out.println(Session.getInstance().toString());
 				start(stage);
 			} catch (Exception e1) {
 				// TODO Auto-generated catch block
