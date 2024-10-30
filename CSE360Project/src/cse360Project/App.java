@@ -398,7 +398,6 @@ public class App extends Application {
          });
 
          generateInviteButton.setOnAction(e -> {
-          	Session.getInstance().clear();
           	try {
   				showAdminInvitePage(stage);
   			} catch (Exception e1) {
@@ -409,7 +408,6 @@ public class App extends Application {
           });
          
          manageUsersButton.setOnAction(e -> {
-           	Session.getInstance().clear();
            	try {
    				showManageUsersPage(stage);
    			} catch (Exception e1) {
@@ -680,9 +678,10 @@ public class App extends Application {
         Button updateButton = new Button("Update");
         
         updateButton.setOnAction(e -> {
-            System.out.println("Register clicked");
+            System.out.println("Update clicked");
             try {
-				userRepo.updateUserById(Session.getInstance().getCurrentUser().getId(), emailField.getText(), firstNameField.getText(), lastNameField.getText(), preferredNameField.getText());
+				userRepo.updateUserById(Session.getInstance().getCurrentUser().getId(), emailField.getText(), firstNameField.getText(), middleNameField.getText(), lastNameField.getText(), preferredNameField.getText());
+				System.out.println(Session.getInstance().toString());
 				start(stage);
 			} catch (Exception e1) {
 				// TODO Auto-generated catch block

@@ -42,9 +42,10 @@ public class User {
 	
 	**********************************************************************************************/
    // All required values 
-	public User(int id, String username, String firstName, String middleName, String lastName, String preferredName, String hashedPassword, String randSalt, String otp, Timestamp otpExpiration)
+	public User(int id, String email, String username, String firstName, String middleName, String lastName, String preferredName, String hashedPassword, String randSalt, String otp, Timestamp otpExpiration)
 	{
 		this.id = id;
+		this.email = email;
 		this.username = username;
 		this.firstName = firstName;
 		this.middleName = middleName;
@@ -59,7 +60,7 @@ public class User {
 	
 	public User(int id, String username, String hashedPassword, String randSalt)
 	{
-		this(id, username, null, null, null, null, hashedPassword, randSalt, null, null);
+		this(id, null, username, null, null, null, null, hashedPassword, randSalt, null, null);
 	}
 
 	// Only required info
@@ -176,6 +177,14 @@ public class User {
     public void setOtpExpiration(Timestamp otpExpiration) {
         this.otpExpiration = otpExpiration;
     }
+
+	@Override
+	public String toString() {
+		return "User [id=" + id + ", email=" + email + ", username=" + username + ", firstName=" + firstName
+				+ ", middleName=" + middleName + ", lastName=" + lastName + ", preferredName=" + preferredName
+				+ ", hashedPassword=" + hashedPassword + ", randSalt=" + randSalt + ", otp=" + otp + ", otpExpiration="
+				+ otpExpiration + "]";
+	}
 
 
 

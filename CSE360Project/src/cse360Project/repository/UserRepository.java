@@ -82,13 +82,12 @@ public class UserRepository {
 	    System.out.println("Password updated successfully for user: " + user.getUsername());
 	}
 	
-
 	// Update user profile to complete using id
-	public boolean updateUserById(int userId, String username, String firstName, String lastName, String preferredName) throws SQLException {
+	public boolean updateUserById(int userId, String email, String firstName, String middleName, String lastName, String preferredName) throws SQLException {
 	    String selectQuery = "SELECT * FROM users WHERE id = ?";
 	    
 	    // Query to update user details
-	    String updateQuery = "UPDATE users SET firstName = ?, lastName = ?, preferredName = ? WHERE id = ?";
+	    String updateQuery = "UPDATE users SET email = ?, firstName = ?, middleName = ?, lastName = ?, preferredName = ? WHERE id = ?";
 	    
 	    try (PreparedStatement selectStmt = connection.prepareStatement(selectQuery)) {
 	        selectStmt.setInt(1, userId);
@@ -97,25 +96,42 @@ public class UserRepository {
 	            if (rs.next()) {
 	                // User exists, proceed with updating their details
 	                try (PreparedStatement updateStmt = connection.prepareStatement(updateQuery)) {
-	                    updateStmt.setString(1, firstName);
-	                    updateStmt.setString(2, lastName);
-	                    updateStmt.setString(3, preferredName);
-	                    updateStmt.setInt(4, userId);
+	                    updateStmt.setString(1, email);
+	                    updateStmt.setString(2, firstName);
+	                    
+	                    // Set middle name, handling potential null
+	                    if (middleName != null) {
+	                        updateStmt.setString(3, middleName);
+	                    } else {
+	                        updateStmt.setNull(3, java.sql.Types.VARCHAR);
+	                    }
+	                    
+	                    updateStmt.setString(4, lastName);
+	                    
+	                    // Set preferred name, handling potential null
+	                    if (preferredName != null) {
+	                        updateStmt.setString(5, preferredName);
+	                    } else {
+	                        updateStmt.setNull(5, java.sql.Types.VARCHAR);
+	                    }
+	                    
+	                    updateStmt.setInt(6, userId);
 	                    
 	                    int rowsUpdated = updateStmt.executeUpdate();
 	                    
 	                    // Return true if update was successful
-	                    Session.getInstance().setCurrentUser(getUserByUsername(username));
+	                    Session.getInstance().setCurrentUser(getUserByUsername(Session.getInstance().getCurrentUser().getUsername()));
 	                    return rowsUpdated > 0;
 	                }
 	            } else {
-	                // User with the given ID dosnt exist
+	                // User with the given ID doesn't exist
 	                System.out.println("User with ID " + userId + " not found.");
 	                return false;
 	            }
 	        }
 	    }
 	}
+	
 	// Fetch user by username, and return User object
 	public User getUserByUsername(String username) throws SQLException {
 	    String query = "SELECT * FROM users WHERE username = ?";
@@ -126,9 +142,16 @@ public class UserRepository {
 	        if (rs.next()) {
 	            return new User(
 	                rs.getInt("id"), 
+	                rs.getString("email"),
 	                rs.getString("username"), 
+	                rs.getString("firstName"),
+	                rs.getString("middleName"),
+	                rs.getString("lastName"),
+	                rs.getString("preferredName"),
 	                rs.getString("hashedPassword"), 
-	                rs.getString("randSalt")
+	                rs.getString("randSalt"),
+	                null,
+	                null
 	            );
 	        } else {
 	            return null; // or throw an exception
@@ -214,7 +237,7 @@ public class UserRepository {
         Timestamp otpExpiration = rs.getTimestamp("otpExpiration");
         
         // Create and return a User object
-        return new User(userId, username, email, firstName, lastName, preferredName, hashedPassword, randSalt, otp, otpExpiration);
+        return new User(userId, email, username, email, firstName, lastName, preferredName, hashedPassword, randSalt, otp, otpExpiration);
     }
     
 	public void clearOtp(String username) throws SQLException {

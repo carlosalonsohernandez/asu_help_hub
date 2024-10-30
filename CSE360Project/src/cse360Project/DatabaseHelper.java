@@ -200,7 +200,6 @@ class DatabaseHelper {
 	        String randSalt = rs.getString("randSalt");  
 	        String roles = rs.getString("roles"); 
 	        String firstName = rs.getString("firstName");
-	        String lastName = rs.getString("lastName");
 
 	        // Display values 
 	        System.out.println("ID: " + id); 
@@ -210,7 +209,6 @@ class DatabaseHelper {
 	        System.out.println("Rand Salt: " + Base64.getDecoder().decode(randSalt));
 	        System.out.println("Roles: " + roles); 
 	        System.out.println("First Name: " + firstName); 
-	        System.out.println("Last Name" + lastName);
 	        System.out.println("----------------------------------------"); // Separator for clarity
 	    }
 	}

@@ -42,6 +42,7 @@ public class Session {
     // Set the current user
     public void setCurrentUser(User user) {
         this.currentUser = user;
+		System.out.println(Session.getInstance().toString());
     }
 
     // Get the current user
@@ -65,5 +66,10 @@ public class Session {
 	public List<String> getInvitedRoles()
 	{
 		return this.invitedRoles;
+	}
+
+	public String toString() {
+		String userDetails = currentUser != null ? currentUser.toString() : "NO SESSION USER SET";
+		return "Session [currentUser=" + userDetails + ", OTPUsed=" + OTPUsed + ", invitedRoles=" + invitedRoles + "]";
 	}
 }
