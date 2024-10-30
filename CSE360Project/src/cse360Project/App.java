@@ -2,6 +2,7 @@ package cse360Project;
 
 import javafx.application.Application;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -515,7 +516,8 @@ public class App extends Application {
         stage.setScene(scene);
         stage.show();
     }
-    
+
+
     public void showManageUsersPage(Stage stage) {
         stage.setTitle("Manage Student Accounts");
 
@@ -530,7 +532,7 @@ public class App extends Application {
         gridPane.add(titleLabel, 0, 0, 2, 1); // Span two columns
 
         // Table to display user accounts
-        TableView<List<String>> tableView = new TableView<>(); 
+        TableView<List<String>> tableView = new TableView<>();
         TableColumn<List<String>, String> usernameCol = new TableColumn<>("Username");
         usernameCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(0))); // Access username
         TableColumn<List<String>, String> nameCol = new TableColumn<>("Name");
@@ -547,18 +549,16 @@ public class App extends Application {
         resetPasswordButton.setOnAction(e -> {
             List<String> selectedUser = tableView.getSelectionModel().getSelectedItem();
             if (selectedUser != null) {
-               try {
-				userService.resetUserPassword(selectedUser.get(0));
-			} catch (Exception e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			} // Assuming username is at index 0
+                try {
+                    userService.resetUserPassword(selectedUser.get(0));
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                } // Assuming username is at index 0
             }
         });
         gridPane.add(resetPasswordButton, 0, 2);
 
-
-     // Delete User button
+        // Delete User button
         Button deleteUserButton = new Button("Delete User");
         deleteUserButton.setOnAction(e -> {
             List<String> selectedUser = tableView.getSelectionModel().getSelectedItem();
@@ -580,7 +580,7 @@ public class App extends Application {
                     // User confirmed deletion
                     userRepo.deleteUserAccount(selectedUser.get(0)); // Assuming username is at index 0
                     // Refresh view to update table
-                    showManageUsersPage(stage);
+                    userService.loadUsersIntoTable(tableView); // Reload users without reinitializing the entire page
                 } else {
                     // User canceled the deletion, no action needed
                     System.out.println("Deletion aborted.");
@@ -592,6 +592,37 @@ public class App extends Application {
         });
         gridPane.add(deleteUserButton, 1, 2);
 
+        // Manage Roles button
+        Button manageRolesButton = new Button("Manage Roles");
+        manageRolesButton.setOnAction(e -> {
+            List<String> selectedUser = tableView.getSelectionModel().getSelectedItem();
+            if (selectedUser != null) {
+                String username = selectedUser.get(0); // Assuming username is at index 0
+                try {
+                    showManageRolesDialog(username);
+                } catch (SQLException e1) {
+                    e1.printStackTrace();
+                }
+            } else {
+                System.out.println("No user selected for role management.");
+            }
+        });
+        gridPane.add(manageRolesButton, 0, 3);
+
+        // Refresh button
+        Button refreshButton = new Button("Refresh");
+        refreshButton.setOnAction(e -> {
+            userService.loadUsersIntoTable(tableView); // Reload users into the table
+        });
+        gridPane.add(refreshButton, 1, 3);
+
+        // Back button
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> {
+            showAdminHomePage(stage); // Navigate back to admin home
+        });
+        gridPane.add(backButton, 0, 4);
+
         // Logout button
         Button logoutButton = new Button("Logout");
         logoutButton.setOnAction(e -> {
@@ -602,11 +633,66 @@ public class App extends Application {
                 ex.printStackTrace();
             }
         });
-        gridPane.add(logoutButton, 1, 3);
+        gridPane.add(logoutButton, 1, 4);
 
         // Set the Scene and show the Stage
         Scene scene = new Scene(gridPane, 600, 400);
         stage.setScene(scene);
+    }
+
+    // Method to show the dialog for managing roles
+    private void showManageRolesDialog(String username) throws SQLException {
+        Stage dialogStage = new Stage();
+        dialogStage.setTitle("Manage Roles for " + username);
+
+        // Create a VBox layout
+        VBox vbox = new VBox(10);
+        vbox.setPadding(new Insets(10));
+
+        // Load current roles for the user
+        List<String> currentRoles = roleRepo.getRolesForUser(userRepo.getUserIdByUsername(username))
+        		.stream().map(Role::getRoleName).toList(); 
+        ListView<String> rolesListView = new ListView<>(FXCollections.observableArrayList(currentRoles));
+        
+        // Add button to add role
+        TextField addRoleField = new TextField();
+        addRoleField.setPromptText("Enter role to add");
+        Button addRoleButton = new Button("Add Role");
+        addRoleButton.setOnAction(e -> {
+            String newRole = addRoleField.getText().trim();
+            if (!newRole.isEmpty()) {
+                try {
+					roleRepo.assignRoleToUser(userRepo.getUserIdByUsername(username), newRole);
+				} catch (SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} // Implement this method in your repo
+                rolesListView.getItems().add(newRole);
+                addRoleField.clear();
+            }
+        });
+
+        // Add button to remove selected role
+        Button removeRoleButton = new Button("Remove Selected Role");
+        removeRoleButton.setOnAction(e -> {
+            String selectedRole = rolesListView.getSelectionModel().getSelectedItem();
+            if (selectedRole != null) {
+                try {
+					roleRepo.removeRoleFromUser(userRepo.getUserIdByUsername(username), selectedRole);
+				} catch (SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} // Implement this method in your repo
+                rolesListView.getItems().remove(selectedRole);
+            }
+        });
+
+        vbox.getChildren().addAll(new Label("Current Roles:"), rolesListView, addRoleField, addRoleButton, removeRoleButton);
+
+        // Set the Scene and show the Stage
+        Scene scene = new Scene(vbox, 300, 300);
+        dialogStage.setScene(scene);
+        dialogStage.show();
     }
     
 
