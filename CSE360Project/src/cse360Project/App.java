@@ -2,6 +2,7 @@ package cse360Project;
 
 import javafx.application.Application;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
@@ -9,29 +10,36 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Dialog;
+import javafx.scene.control.DialogPane;
 import javafx.stage.Stage;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.PasswordField;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.layout.HBox;
 import javafx.scene.control.ButtonBar;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import cse360Project.model.HelpArticle;
 import cse360Project.model.Role;
+import cse360Project.repository.HelpArticleRepository;
 import cse360Project.repository.InvitationRepository;
 import cse360Project.repository.RoleRepository;
 import cse360Project.repository.UserRepository;
+import cse360Project.service.HelpArticleService;
 import cse360Project.service.InvitationService;
 import cse360Project.service.UserService;
 import javafx.scene.layout.GridPane;
@@ -55,6 +63,8 @@ public class App extends Application {
 	private static UserRepository userRepo = null;
 	private static RoleRepository roleRepo = null;
 	private static InvitationRepository inviteRepo = null;
+	private static HelpArticleRepository helpRepo = null;
+	private static HelpArticleService helpService = null;
 	private static UserService userService = null;
 	private static InvitationService inviteService = null;
     // Entry point for JavaFX application
@@ -68,10 +78,13 @@ public class App extends Application {
         userRepo = new UserRepository(databaseHelper.getConnection());
         roleRepo = new RoleRepository(databaseHelper.getConnection());
         inviteRepo = new InvitationRepository(databaseHelper.getConnection());
+        helpRepo = new HelpArticleRepository(databaseHelper.getConnection());
+        
         
         // establish services
         userService = new UserService(userRepo, roleRepo);
         inviteService = new InvitationService(inviteRepo, roleRepo);
+        helpService = new HelpArticleService(helpRepo);
         
         databaseHelper.displayUsersByUser();
         System.out.println(s);
@@ -192,7 +205,15 @@ public class App extends Application {
                     }
                 } else {
                     // User is not an admin, go to student/instructor home page
-                    showStudentAndInstructorHomePage(primaryStage);
+                	if(roles.size() > 1) {
+                		showRoleSelectionPopup(roles, primaryStage);
+                	} else {
+                		if(roles.stream().anyMatch(role -> role.equalsIgnoreCase("instructor"))) {
+                			showInstructorHomePage(primaryStage);
+                		} else {
+                			showStudentHomePage(primaryStage);
+                		}
+                	}
                 }
             } else {
                 // Finish your account login
@@ -293,8 +314,10 @@ public class App extends Application {
         result.ifPresent(selectedRole -> {
             if (selectedRole.equals("admin")) {
                 showAdminHomePage(primaryStage);
+            } else if(selectedRole.equals("instructor")) {
+            	showInstructorHomePage(primaryStage);
             } else {
-                showStudentAndInstructorHomePage(primaryStage);
+                showStudentHomePage(primaryStage);
             }
         });
     }
@@ -386,6 +409,7 @@ public class App extends Application {
          Button logoutButton = new Button("Logout");
          Button generateInviteButton = new Button("Generate Invite");
          Button manageUsersButton = new Button("Manage Users");
+         Button manageHelpArticlesButton = new Button("Manage Help Articles");
          
          logoutButton.setOnAction(e -> {
          	Session.getInstance().clear();
@@ -420,13 +444,24 @@ public class App extends Application {
    			}
 
            });
+         
+         manageHelpArticlesButton.setOnAction(e -> {
+            	try {
+    				showManageHelpArticlesPage(stage);
+    			} catch (Exception e1) {
+    				// TODO Auto-generated catch block
+    				e1.printStackTrace();
+    			}
+
+            });
         
          
          // Add elements to the GridPane
          gridPane.add(helloLabel, 0, 1);
-         gridPane.add(generateInviteButton, 1, 2);
-         gridPane.add(manageUsersButton, 1, 3);
-         gridPane.add(logoutButton, 1, 4);
+         gridPane.add(generateInviteButton, 0, 2);
+         gridPane.add(manageUsersButton, 0, 3);
+         gridPane.add(manageHelpArticlesButton, 0, 4);
+         gridPane.add(logoutButton, 0, 5);
 
          ScrollPane scrollPane = new ScrollPane();
          scrollPane.setContent(gridPane);
@@ -516,6 +551,345 @@ public class App extends Application {
         stage.show();
     }
     
+    /***************************************************************
+     * Method to show the manageHelpArticlesPage
+     * 
+     * @params stage the current stage that the GUI is running on
+     * 
+     * @TODO: Possible refactor? Not sure how to split the button logic into seperate classes since it uses this layer
+     * but it may be worth looking into.
+     *  
+     ***************************************************************/
+    public void showManageHelpArticlesPage(Stage stage) {
+        stage.setTitle("Manage Help Articles");
+
+        // Create GridPane layout
+        GridPane gridPane = new GridPane();
+        gridPane.setPadding(new Insets(10));
+        gridPane.setHgap(10);
+        gridPane.setVgap(10);
+
+        // Label for page title
+        Label titleLabel = new Label("Manage Help Articles");
+
+        // Table to display help articles
+        TableView<List<String>> tableView = new TableView<>(); 
+        TableColumn<List<String>, String> headerCol = new TableColumn<>("Header");
+        headerCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(0)));
+        TableColumn<List<String>, String> titleCol = new TableColumn<>("Title");
+        titleCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(1)));
+        TableColumn<List<String>, String> descriptionCol = new TableColumn<>("Short Description");
+        descriptionCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(2)));
+        TableColumn<List<String>, String> levelCol = new TableColumn<>("Level");
+        levelCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(3)));
+
+        tableView.getColumns().addAll(headerCol, titleCol, descriptionCol, levelCol);
+        helpService.loadArticlesIntoTable(tableView); // Load article data into the table
+
+        // Create Article button
+        Button createArticleButton = new Button("Create Article");
+        createArticleButton.setOnAction(e -> {
+            // Code to open a form for creating a new article
+            helpService.createNewArticleForm();
+        });
+
+        // Update Article button
+        Button updateArticleButton = new Button("Update Article");
+        updateArticleButton.setOnAction(e -> {
+            List<String> selectedArticle = tableView.getSelectionModel().getSelectedItem();
+            if (selectedArticle != null) {
+                // Open form with pre-filled data for the selected article
+                helpService.updateArticleForm(selectedArticle.get(0));
+            }
+        });
+
+        
+        Button refreshArticleButton = new Button("Refresh Articles");
+        refreshArticleButton.setOnAction(e -> {
+        	showManageHelpArticlesPage(stage);
+
+        });
+
+        // Delete Article button
+        Button deleteArticleButton = new Button("Delete Article");
+        deleteArticleButton.setOnAction(e -> {
+            List<String> selectedArticle = tableView.getSelectionModel().getSelectedItem();
+            if (selectedArticle != null) {
+                // Create a confirmation dialog
+                Alert confirmationAlert = new Alert(Alert.AlertType.CONFIRMATION);
+                confirmationAlert.setTitle("Confirm Deletion");
+                confirmationAlert.setHeaderText(null);
+                confirmationAlert.setContentText("Are you sure you want to delete this article?");
+
+                ButtonType yesButton = new ButtonType("Yes");
+                ButtonType noButton = new ButtonType("No");
+                confirmationAlert.getButtonTypes().setAll(yesButton, noButton);
+
+                Optional<ButtonType> result = confirmationAlert.showAndWait();
+                if (result.isPresent() && result.get() == yesButton) {
+                    helpService.deleteArticle(selectedArticle.get(0)); 
+                    showManageHelpArticlesPage(stage); // Refresh page
+                }
+            }
+        });
+
+
+        /***************************************************************
+         * 
+         * BACKING UP ARTICLES 
+         *  
+         ***************************************************************/
+        Button backupButton = new Button("Backup");
+        backupButton.setOnAction(e -> {
+            List<String> availableGroups = helpRepo.getAvailableGroups();
+
+            // Create a custom dialog for group selection
+            Dialog<ButtonType> groupDialog = new Dialog<>();
+            groupDialog.setTitle("Select Article Groups");
+            groupDialog.setHeaderText("Choose groups to backup");
+
+            // Create a ListView for group selection
+            ListView<String> listView = new ListView<>();
+            listView.getItems().addAll(availableGroups);
+            listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+            // Set the dialog's content to the ListView
+            DialogPane dialogPane = groupDialog.getDialogPane();
+            dialogPane.setContent(listView);
+            dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+            // Show the dialog and check the result
+            groupDialog.showAndWait().ifPresent(result -> {
+                if (result == ButtonType.OK) {
+                    // Retrieve selected groups from ListView
+                    List<String> selectedGroups = new ArrayList<>(listView.getSelectionModel().getSelectedItems());
+                    
+                    if (!selectedGroups.isEmpty()) {
+                        // Prompt the user for a file name
+                        TextInputDialog backupDialog = new TextInputDialog();
+                        backupDialog.setTitle("Backup Articles");
+                        backupDialog.setHeaderText("Specify Backup File Name");
+                        backupDialog.setContentText("Enter the file name (with .backup extension):");
+
+                        backupDialog.showAndWait().ifPresent(fileName -> {
+                            if (fileName != null && !fileName.trim().isEmpty()) {
+                                // Call the repository's backup method with selected groups
+                                List<HelpArticle> articlesToBackup = helpRepo.getArticlesByGroups(selectedGroups);
+                                try {
+                                    helpRepo.backupArticles(fileName.trim(), articlesToBackup);
+                                    helpService.showInfo("Backup successful to " + fileName);
+                                } catch (IOException e1) {
+                                    e1.printStackTrace();
+                                    helpService.showError("Error during backup: " + e1.getMessage());
+                                }
+                            } else {
+                                helpService.showError("File name cannot be empty.");
+                            }
+                        });
+                    } else {
+                        helpService.showError("No groups selected.");
+                    }
+                }
+            });
+
+            showManageHelpArticlesPage(stage);
+        });
+
+
+        
+        /***************************************************************
+         * 
+         * RESTORING ARTICLES 
+         *  
+         ***************************************************************/
+
+        Button restoreButton = new Button("Restore");
+        restoreButton.setOnAction(e -> {
+            Dialog<ButtonType> dialog = new Dialog<>();
+            dialog.setTitle("Restore Articles");
+            dialog.setHeaderText("Specify Restore File Name");
+
+            // Create VBox to hold TextField and CheckBox
+            VBox restoreDialogPane = new VBox();
+            TextField fileNameField = new TextField();
+            fileNameField.setPromptText("Enter the backup file name (with .backup extension)");
+
+            CheckBox mergeCheckBox = new CheckBox("Merge?");
+            mergeCheckBox.setSelected(false); // Default to not merging
+
+            restoreDialogPane.getChildren().addAll(new Label("Backup file name:"), fileNameField, mergeCheckBox);
+            dialog.getDialogPane().setContent(restoreDialogPane);
+
+            // Add OK and Cancel buttons to the dialog
+            dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+            // Show the dialog and process the result
+            dialog.showAndWait().ifPresent(result -> {
+                if (result == ButtonType.OK) {
+                    String fileName = fileNameField.getText();
+                    boolean merge = mergeCheckBox.isSelected();
+
+                    if (fileName != null && !fileName.trim().isEmpty()) {
+                        try {
+                            helpRepo.restoreArticles(fileName.trim(), !merge);
+                            helpService.showInfo("Restore successful from " + fileName);
+                        } catch (IOException | SQLException ex) {
+                            helpService.showError("Restore failed: " + ex.getMessage());
+                        }
+                    } else {
+                        helpService.showError("File name cannot be empty.");
+                    }
+                }
+            });
+            
+            // Refresh page if necessary
+            showManageHelpArticlesPage(stage);
+        });
+
+        // group articles button 
+        Button filterByGroupButton = new Button("Filter by Group");
+        filterByGroupButton.setOnAction(e -> {
+            List<String> availableGroups = helpRepo.getAvailableGroups();
+            System.out.println("Available Groups: " + availableGroups);
+
+            // create a custom dialog for group selection
+            Dialog<ButtonType> groupDialog = new Dialog<>();
+            groupDialog.setTitle("Select Article Groups");
+            groupDialog.setHeaderText("Choose groups to filter articles");
+
+            // Create a ListView for group selection
+            ListView<String> listView = new ListView<>();
+            listView.getItems().addAll(availableGroups);
+            listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+            // set dialog's content to the ListView
+            DialogPane dialogPane = groupDialog.getDialogPane();
+            dialogPane.setContent(listView);
+            dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+            // Show the dialog and check the result
+            groupDialog.showAndWait().ifPresent(result -> {
+                if (result == ButtonType.OK) {
+                    // Retrieve selected groups from ListView
+                    List<String> selectedGroups = new ArrayList<>(listView.getSelectionModel().getSelectedItems());
+                    System.out.println("Selected Groups: " + selectedGroups);
+
+helpService.loadArticlesIntoTable(tableView, selectedGroups);
+                }
+            });
+        });
+
+        // Search Bar
+        TextField searchField = new TextField();
+        searchField.setPromptText("Search articles by keyword...");
+        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+            helpService.searchArticlesByKeyword(newValue, tableView);
+        });
+
+        // Logout button
+        Button logoutButton = new Button("Logout");
+        logoutButton.setOnAction(e -> {
+            Session.getInstance().clear();
+            try {
+                start(stage); // Redirect to login page
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+        
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> {
+        	try {
+				if(roleRepo.getRolesForUser(Session.getInstance().getCurrentUser().getId())
+						.stream()
+						.map(Role::getRoleName)
+						.anyMatch(p -> p.equals("admin"))) {
+					showAdminHomePage(stage);
+				} else {
+					showInstructorHomePage(stage);
+				}
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+        });
+        
+        
+        // Add gridPane elements
+        gridPane.add(titleLabel, 0, 0, 3, 1); 
+        gridPane.add(searchField, 0, 1, 3, 1); 
+        gridPane.add(tableView, 0, 2, 3, 1); 
+        gridPane.add(createArticleButton, 0, 3); 
+        gridPane.add(updateArticleButton, 1, 3); 
+        gridPane.add(refreshArticleButton, 2, 3); 
+        gridPane.add(deleteArticleButton, 0, 4); 
+        gridPane.add(backupButton, 1, 4); 
+        gridPane.add(restoreButton, 2, 4); 
+        gridPane.add(filterByGroupButton, 0, 5); 
+        gridPane.add(backButton, 0, 6); 
+        gridPane.add(logoutButton, 1, 6); 
+
+        // Set the Scene and show the Stage
+        Scene scene = new Scene(gridPane, 800, 600);
+        stage.setScene(scene);
+    }
+    
+    private void showInstructorHomePage(Stage stage) {
+        stage.setTitle("Home");
+        
+        // GridPane layout with padding
+        GridPane gridPane = new GridPane();
+        gridPane.setPadding(new Insets(10)); // Adds padding to avoid elements near edges
+        gridPane.setHgap(10); // Horizontal spacing between elements
+        gridPane.setVgap(10); // Vertical spacing between elements
+        
+        Label helloLabel = new Label("Welcome and hello " + Session.getInstance().getCurrentUser().getFirstName() + " " + Session.getInstance().getCurrentUser().getLastName() + "!");
+
+        Button manageHelpArticlesButton = new Button("Manage Help Articles");
+        manageHelpArticlesButton.setOnAction(e -> {
+        	try {
+				showManageHelpArticlesPage(stage);
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+
+        });
+
+        // logout 
+        Button logoutButton = new Button("Logout");
+        
+        logoutButton.setOnAction(e -> {
+        	Session.getInstance().clear();
+        	try {
+				start(stage);
+			} catch (UnsupportedEncodingException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+
+        });
+
+        // Add elements to the GridPane
+
+        gridPane.add(helloLabel, 0, 1);
+        gridPane.add(manageHelpArticlesButton, 0, 2);
+        gridPane.add(logoutButton, 0, 3);
+        
+        // use scroll pane for potentially long list of users
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setContent(gridPane);
+
+        // Set the Scene and show the Stage
+        Scene scene = new Scene(scrollPane, 400, 300); // Width and Height
+        stage.setScene(scene);
+		
+	}
+
+
     public void showManageUsersPage(Stage stage) {
         stage.setTitle("Manage Student Accounts");
 
@@ -530,7 +904,7 @@ public class App extends Application {
         gridPane.add(titleLabel, 0, 0, 2, 1); // Span two columns
 
         // Table to display user accounts
-        TableView<List<String>> tableView = new TableView<>(); 
+        TableView<List<String>> tableView = new TableView<>();
         TableColumn<List<String>, String> usernameCol = new TableColumn<>("Username");
         usernameCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(0))); // Access username
         TableColumn<List<String>, String> nameCol = new TableColumn<>("Name");
@@ -547,18 +921,16 @@ public class App extends Application {
         resetPasswordButton.setOnAction(e -> {
             List<String> selectedUser = tableView.getSelectionModel().getSelectedItem();
             if (selectedUser != null) {
-               try {
-				userService.resetUserPassword(selectedUser.get(0));
-			} catch (Exception e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			} // Assuming username is at index 0
+                try {
+                    userService.resetUserPassword(selectedUser.get(0));
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                } // Assuming username is at index 0
             }
         });
         gridPane.add(resetPasswordButton, 0, 2);
 
-
-     // Delete User button
+        // Delete User button
         Button deleteUserButton = new Button("Delete User");
         deleteUserButton.setOnAction(e -> {
             List<String> selectedUser = tableView.getSelectionModel().getSelectedItem();
@@ -580,7 +952,7 @@ public class App extends Application {
                     // User confirmed deletion
                     userRepo.deleteUserAccount(selectedUser.get(0)); // Assuming username is at index 0
                     // Refresh view to update table
-                    showManageUsersPage(stage);
+                    userService.loadUsersIntoTable(tableView); // Reload users without reinitializing the entire page
                 } else {
                     // User canceled the deletion, no action needed
                     System.out.println("Deletion aborted.");
@@ -592,6 +964,37 @@ public class App extends Application {
         });
         gridPane.add(deleteUserButton, 1, 2);
 
+        // Manage Roles button
+        Button manageRolesButton = new Button("Manage Roles");
+        manageRolesButton.setOnAction(e -> {
+            List<String> selectedUser = tableView.getSelectionModel().getSelectedItem();
+            if (selectedUser != null) {
+                String username = selectedUser.get(0); // Assuming username is at index 0
+                try {
+                    showManageRolesDialog(username);
+                } catch (SQLException e1) {
+                    e1.printStackTrace();
+                }
+            } else {
+                System.out.println("No user selected for role management.");
+            }
+        });
+        gridPane.add(manageRolesButton, 0, 3);
+
+        // Refresh button
+        Button refreshButton = new Button("Refresh");
+        refreshButton.setOnAction(e -> {
+            userService.loadUsersIntoTable(tableView); // Reload users into the table
+        });
+        gridPane.add(refreshButton, 1, 3);
+
+        // Back button
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> {
+            showAdminHomePage(stage); // Navigate back to admin home
+        });
+        gridPane.add(backButton, 0, 4);
+
         // Logout button
         Button logoutButton = new Button("Logout");
         logoutButton.setOnAction(e -> {
@@ -602,7 +1005,7 @@ public class App extends Application {
                 ex.printStackTrace();
             }
         });
-        gridPane.add(logoutButton, 1, 3);
+        gridPane.add(logoutButton, 1, 4);
 
         // Set the Scene and show the Stage
         Scene scene = new Scene(gridPane, 600, 400);
@@ -610,7 +1013,7 @@ public class App extends Application {
     }
     
 
-	public void showStudentAndInstructorHomePage(Stage stage) {
+	public void showStudentHomePage(Stage stage) {
         stage.setTitle("Home");
         
         // GridPane layout with padding
@@ -714,6 +1117,63 @@ public class App extends Application {
         Scene scene = new Scene(scrollPane, 400, 300); // Width and Height
         stage.setScene(scene);
     }
+    
+    // Method to show the dialog for managing roles
+    private void showManageRolesDialog(String username) throws SQLException {
+        Stage dialogStage = new Stage();
+        dialogStage.setTitle("Manage Roles for " + username);
+
+        // Create a VBox layout
+        VBox vbox = new VBox(10);
+        vbox.setPadding(new Insets(10));
+
+        // Load current roles for the user
+        List<String> currentRoles = roleRepo.getRolesForUser(userRepo.getUserIdByUsername(username))
+        		.stream().map(Role::getRoleName).toList(); 
+        ListView<String> rolesListView = new ListView<>(FXCollections.observableArrayList(currentRoles));
+        
+        // Add button to add role
+        TextField addRoleField = new TextField();
+        addRoleField.setPromptText("Enter role to add");
+        Button addRoleButton = new Button("Add Role");
+        addRoleButton.setOnAction(e -> {
+            String newRole = addRoleField.getText().trim();
+            if (!newRole.isEmpty()) {
+                try {
+					roleRepo.assignRoleToUser(userRepo.getUserIdByUsername(username), newRole);
+				} catch (SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} // Implement this method in your repo
+                rolesListView.getItems().add(newRole);
+                addRoleField.clear();
+            }
+        });
+
+        // Add button to remove selected role
+        Button removeRoleButton = new Button("Remove Selected Role");
+        removeRoleButton.setOnAction(e -> {
+            String selectedRole = rolesListView.getSelectionModel().getSelectedItem();
+            if (selectedRole != null) {
+                try {
+					roleRepo.removeRoleFromUser(userRepo.getUserIdByUsername(username), selectedRole);
+				} catch (SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} // Implement this method in your repo
+                rolesListView.getItems().remove(selectedRole);
+            }
+        });
+
+        vbox.getChildren().addAll(new Label("Current Roles:"), rolesListView, addRoleField, addRoleButton, removeRoleButton);
+
+        // Set the Scene and show the Stage
+        Scene scene = new Scene(vbox, 300, 300);
+        dialogStage.setScene(scene);
+        dialogStage.show();
+    }
+
+    
     // Main method to launch the application
     public static void main(String[] args) {
         launch(args);

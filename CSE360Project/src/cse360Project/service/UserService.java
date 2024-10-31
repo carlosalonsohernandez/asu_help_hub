@@ -118,7 +118,6 @@ public class UserService {
     
     // open endpoint to repo and handle additional password logic
 	public void updateUserPassword(User user, String newPassword) throws Exception {
-	    String query = "UPDATE users SET hashedPassword = ?, randSalt = ? WHERE username = ?";
 	    Password pass = new Password(newPassword);
 	    
 	    userRepository.updateUserPassword(user.getUsername(), pass.getHashedPass(), pass.getSalt());
