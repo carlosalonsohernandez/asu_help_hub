@@ -10,6 +10,7 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Dialog;
+import javafx.scene.control.DialogPane;
 import javafx.stage.Stage;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
@@ -611,90 +612,112 @@ public class App extends Application {
         });
         gridPane.add(deleteArticleButton, 0, 3);
 
-        // Backup and Restore Buttons
+
+        /***************************************************************
+         * 
+         * BACKING UP ARTICLES 
+         *  
+         ***************************************************************/
         Button backupButton = new Button("Backup");
         backupButton.setOnAction(e -> {
             List<String> availableGroups = helpRepo.getAvailableGroups();
-            
-            // Create a new dialog for group selection
-            ChoiceDialog<List<String>> groupDialog = new ChoiceDialog<>();
+
+            // Create a custom dialog for group selection
+            Dialog<ButtonType> groupDialog = new Dialog<>();
             groupDialog.setTitle("Select Article Groups");
             groupDialog.setHeaderText("Choose groups to backup");
-            
-            // Create a list of checkboxes for group selection
+
+            // Create a ListView for group selection
             ListView<String> listView = new ListView<>();
             listView.getItems().addAll(availableGroups);
-            
-            // Allow multiple selection
             listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-            
-            // Set the dialog's content
-            groupDialog.getDialogPane().setContent(listView);
-            
-            // Show the dialog and wait for a response
-            groupDialog.showAndWait().ifPresent(selectedGroups -> {
-                if (!selectedGroups.isEmpty()) {
-                    // Get the file name from the user
-                    TextInputDialog backupDialog = new TextInputDialog();
-                    backupDialog.setTitle("Backup Articles");
-                    backupDialog.setHeaderText("Specify Backup File Name");
-                    backupDialog.setContentText("Enter the file name (with .backup extension):");
+
+            // Set the dialog's content to the ListView
+            DialogPane dialogPane = groupDialog.getDialogPane();
+            dialogPane.setContent(listView);
+            dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+            // Show the dialog and check the result
+            groupDialog.showAndWait().ifPresent(result -> {
+                if (result == ButtonType.OK) {
+                    // Retrieve selected groups from ListView
+                    List<String> selectedGroups = new ArrayList<>(listView.getSelectionModel().getSelectedItems());
                     
-                    backupDialog.showAndWait().ifPresent(fileName -> {
-                        if (fileName != null && !fileName.trim().isEmpty()) {
-                            // Call the repository's backup method with selected groups
-                        	List<HelpArticle> articlesToBackup = helpRepo.getArticlesByGroups(selectedGroups);
-                            try {
-								helpRepo.backupArticles(fileName, articlesToBackup);
-							} catch (IOException e1) {
-								// TODO Auto-generated catch block
-								e1.printStackTrace();
-							}
-                            helpService.showInfo("Backup successful to " + fileName);
-                        } else {
-                            helpService.showError("File name cannot be empty.");
-                        }
-                    });
-                } else {
-                    helpService.showError("No groups selected.");
+                    if (!selectedGroups.isEmpty()) {
+                        // Prompt the user for a file name
+                        TextInputDialog backupDialog = new TextInputDialog();
+                        backupDialog.setTitle("Backup Articles");
+                        backupDialog.setHeaderText("Specify Backup File Name");
+                        backupDialog.setContentText("Enter the file name (with .backup extension):");
+
+                        backupDialog.showAndWait().ifPresent(fileName -> {
+                            if (fileName != null && !fileName.trim().isEmpty()) {
+                                // Call the repository's backup method with selected groups
+                                List<HelpArticle> articlesToBackup = helpRepo.getArticlesByGroups(selectedGroups);
+                                try {
+                                    helpRepo.backupArticles(fileName.trim(), articlesToBackup);
+                                    helpService.showInfo("Backup successful to " + fileName);
+                                } catch (IOException e1) {
+                                    e1.printStackTrace();
+                                    helpService.showError("Error during backup: " + e1.getMessage());
+                                }
+                            } else {
+                                helpService.showError("File name cannot be empty.");
+                            }
+                        });
+                    } else {
+                        helpService.showError("No groups selected.");
+                    }
                 }
             });
+
             showManageHelpArticlesPage(stage);
         });
         gridPane.add(backupButton, 0, 4);
 
 
+
         Button restoreButton = new Button("Restore");
         restoreButton.setOnAction(e -> {
-            VBox restoreDialogPane = new VBox();
-            
-            // Create TextInputDialog to get the restore file name
-            TextInputDialog restoreDialog = new TextInputDialog();
-            restoreDialog.setTitle("Restore Articles");
-            restoreDialog.setHeaderText("Specify Restore File Name");
-            restoreDialog.setContentText("Enter the backup file name (with .backup extension):");
+            Dialog<ButtonType> dialog = new Dialog<>();
+            dialog.setTitle("Restore Articles");
+            dialog.setHeaderText("Specify Restore File Name");
 
-            // Add checkbox for merging
+            // Create VBox to hold TextField and CheckBox
+            VBox restoreDialogPane = new VBox();
+            TextField fileNameField = new TextField();
+            fileNameField.setPromptText("Enter the backup file name (with .backup extension)");
+
             CheckBox mergeCheckBox = new CheckBox("Merge?");
             mergeCheckBox.setSelected(false); // Default to not merging
-            restoreDialogPane.getChildren().addAll(restoreDialog.getDialogPane(), mergeCheckBox);
 
-            // Show dialog and wait for a response
-            restoreDialog.showAndWait().ifPresent(fileName -> {
-                if (fileName != null && !fileName.trim().isEmpty()) {
-                    boolean merge = mergeCheckBox.isSelected(); // Get merge option
-                    try {
-						helpRepo.restoreArticles(fileName.trim(), merge);
-					} catch (IOException | SQLException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
-    				helpService.showInfo("Restore successful from " + fileName);
-                } else {
-                    helpService.showError("File name cannot be empty.");
+            restoreDialogPane.getChildren().addAll(new Label("Backup file name:"), fileNameField, mergeCheckBox);
+            dialog.getDialogPane().setContent(restoreDialogPane);
+
+            // Add OK and Cancel buttons to the dialog
+            dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+            // Show the dialog and process the result
+            dialog.showAndWait().ifPresent(result -> {
+                if (result == ButtonType.OK) {
+                    String fileName = fileNameField.getText();
+                    boolean merge = mergeCheckBox.isSelected();
+
+                    if (fileName != null && !fileName.trim().isEmpty()) {
+                        try {
+                            helpRepo.restoreArticles(fileName.trim(), merge);
+                            helpService.showInfo("Restore successful from " + fileName);
+                        } catch (IOException | SQLException ex) {
+                            helpService.showError("Restore failed: " + ex.getMessage());
+                        }
+                    } else {
+                        helpService.showError("File name cannot be empty.");
+                    }
                 }
             });
-            showManageHelpArticlesPage(stage); // Refresh page
+
+            // Refresh page if necessary
+            showManageHelpArticlesPage(stage);
         });
         gridPane.add(restoreButton, 1, 4);
 

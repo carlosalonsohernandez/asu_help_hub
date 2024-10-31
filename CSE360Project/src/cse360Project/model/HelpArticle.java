@@ -1,5 +1,7 @@
 package cse360Project.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -20,10 +22,21 @@ public class HelpArticle {
     private String safeTitle;             // Non-sensitive version of title
     private String safeDescription;       // Non-sensitive version of short description
 
-    // Constructors
-    public HelpArticle(Long id, String header, String level, String title, String shortDescription,
-                       Set<String> keywords, String body, List<String> links, Set<String> groupIdentifiers,
-                       boolean isSensitive, String safeTitle, String safeDescription) {
+    // Constructor
+    @JsonCreator
+    public HelpArticle(
+            @JsonProperty("id") Long id,
+            @JsonProperty("header") String header,
+            @JsonProperty("level") String level,
+            @JsonProperty("title") String title,
+            @JsonProperty("shortDescription") String shortDescription,
+            @JsonProperty("keywords") Set<String> keywords,
+            @JsonProperty("body") String body,
+            @JsonProperty("links") List<String> links,
+            @JsonProperty("groupIdentifiers") Set<String> groupIdentifiers,
+            @JsonProperty("isSensitive") boolean isSensitive,
+            @JsonProperty("safeTitle") String safeTitle,
+            @JsonProperty("safeDescription") String safeDescription) {
         this.id = id;
         this.header = header;
         this.level = level;

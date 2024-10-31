@@ -316,6 +316,7 @@ public class HelpArticleService {
 
     // helper functions
     public void showError(String message) {
+    	System.out.println(message);
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setTitle("Error");
         alert.setHeaderText(null);
