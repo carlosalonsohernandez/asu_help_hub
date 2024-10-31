@@ -1,0 +1,31 @@
+[ {
+  "id" : 0,
+  "header" : "Header1",
+  "level" : "Intro",
+  "title" : "First Article",
+  "shortDescription" : "A short description",
+  "keywords" : [ "Java", "Help" ],
+  "body" : "This is the body of the help article.",
+  "links" : [ "https://example.com" ],
+  "groupIdentifiers" : [ "Group1", "Group2" ],
+  "safeTitle" : "Safe Title",
+  "safeDescription" : "Safe Description",
+  "sensitive" : false,
+  "displayTitle" : "First Article",
+  "displayDescription" : "A short description"
+}, {
+  "id" : 0,
+  "header" : "Header2",
+  "level" : "Intro",
+  "title" : "Second Article",
+  "shortDescription" : "A short description",
+  "keywords" : [ "Java", "Help" ],
+  "body" : "This is the body of the help article.",
+  "links" : [ "https://example.com" ],
+  "groupIdentifiers" : [ "Group1", "Group2" ],
+  "safeTitle" : "Safe Title",
+  "safeDescription" : "Safe Description",
+  "sensitive" : false,
+  "displayTitle" : "Second Article",
+  "displayDescription" : "A short description"
+} ]
