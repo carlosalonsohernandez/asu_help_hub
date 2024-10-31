@@ -39,9 +39,20 @@ public class HelpArticleService {
     }
 
     public void loadArticlesIntoTable(TableView<List<String>> tableView) {
+    	loadArticlesIntoTable(tableView, null);
+    }
+    
+    public void loadArticlesIntoTable(TableView<List<String>> tableView, List<String> selectedGroups) {
         try {
-            List<HelpArticle> articles = articleRepo.getAllArticles();
+            List<HelpArticle> articles;
+            if (selectedGroups != null && !selectedGroups.isEmpty()) {
+                articles = articleRepo.getArticlesByGroups(selectedGroups); // Get articles based on selected groups
+                System.out.println("Selected group is not empty we got: " + articles.size());
+            } else {
+                articles = articleRepo.getAllArticles(); // Get all articles if no groups are selected
+            }
             tableView.getItems().clear();
+            System.out.println("Fetched Articles: " + articles.size());
             for (HelpArticle article : articles) {
                 tableView.getItems().add(article.toList());
             }
@@ -209,7 +220,7 @@ public class HelpArticleService {
 		}
     }
 
-    public void manageGroupsForm() {
+    public void viewGroupsForm() {
         // Open a new window for managing groups
         Stage manageGroupsStage = new Stage();
         manageGroupsStage.setTitle("Manage Groups");

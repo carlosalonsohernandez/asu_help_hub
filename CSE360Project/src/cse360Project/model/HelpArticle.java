@@ -191,18 +191,17 @@ public class HelpArticle {
         List<String> articleDetails = new ArrayList<>();
         
         // Add fields to the list in the desired order
-        articleDetails.add(String.valueOf(id)); // ID
-        articleDetails.add(header);               // Header
-        articleDetails.add(level);                // Level
-        articleDetails.add(title);                // Title
-        articleDetails.add(shortDescription);     // Short Description
-        articleDetails.add(String.join(", ", keywords)); // Keywords as a comma-separated string
-        articleDetails.add(body);                 // Body
-        articleDetails.add(String.join(", ", links)); // Links as a comma-separated string
-        articleDetails.add(String.join(", ", groupIdentifiers)); // Group Identifiers as a comma-separated string
-        articleDetails.add(String.valueOf(isSensitive)); // Is Sensitive
-        articleDetails.add(safeTitle);            // Safe Title
-        articleDetails.add(safeDescription);      // Safe Description
+        articleDetails.add(header);              
+        articleDetails.add(title);               
+        articleDetails.add(shortDescription);                
+        articleDetails.add(level);    
+        articleDetails.add(String.join(", ", keywords)); 
+        articleDetails.add(body);                
+        articleDetails.add(String.join(", ", links)); 
+        articleDetails.add(String.join(", ", groupIdentifiers)); 
+        articleDetails.add(String.valueOf(isSensitive)); 
+        articleDetails.add(safeTitle);           
+        articleDetails.add(safeDescription);     
 
         return articleDetails;
     }

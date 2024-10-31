@@ -551,6 +551,15 @@ public class App extends Application {
         stage.show();
     }
     
+    /***************************************************************
+     * Method to show the manageHelpArticlesPage
+     * 
+     * @params stage the current stage that the GUI is running on
+     * 
+     * @TODO: Possible refactor? Not sure how to split the button logic into seperate classes since it uses this layer
+     * but it may be worth looking into.
+     *  
+     ***************************************************************/
     public void showManageHelpArticlesPage(Stage stage) {
         stage.setTitle("Manage Help Articles");
 
@@ -562,22 +571,20 @@ public class App extends Application {
 
         // Label for page title
         Label titleLabel = new Label("Manage Help Articles");
-        gridPane.add(titleLabel, 0, 0, 2, 1); // Span two columns
 
         // Table to display help articles
         TableView<List<String>> tableView = new TableView<>(); 
         TableColumn<List<String>, String> headerCol = new TableColumn<>("Header");
-        headerCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(1)));
+        headerCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(0)));
         TableColumn<List<String>, String> titleCol = new TableColumn<>("Title");
-        titleCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(2)));
-        TableColumn<List<String>, String> descriptionCol = new TableColumn<>("Description");
-        descriptionCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(3)));
+        titleCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(1)));
+        TableColumn<List<String>, String> descriptionCol = new TableColumn<>("Short Description");
+        descriptionCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(2)));
         TableColumn<List<String>, String> levelCol = new TableColumn<>("Level");
-        levelCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(4)));
+        levelCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(3)));
 
         tableView.getColumns().addAll(headerCol, titleCol, descriptionCol, levelCol);
         helpService.loadArticlesIntoTable(tableView); // Load article data into the table
-        gridPane.add(tableView, 0, 1, 2, 1); // Span two columns
 
         // Create Article button
         Button createArticleButton = new Button("Create Article");
@@ -585,7 +592,6 @@ public class App extends Application {
             // Code to open a form for creating a new article
             helpService.createNewArticleForm();
         });
-        gridPane.add(createArticleButton, 0, 2);
 
         // Update Article button
         Button updateArticleButton = new Button("Update Article");
@@ -593,17 +599,16 @@ public class App extends Application {
             List<String> selectedArticle = tableView.getSelectionModel().getSelectedItem();
             if (selectedArticle != null) {
                 // Open form with pre-filled data for the selected article
-                helpService.updateArticleForm(selectedArticle.get(1));
+                helpService.updateArticleForm(selectedArticle.get(0));
             }
         });
-        gridPane.add(updateArticleButton, 1, 2);
+
         
         Button refreshArticleButton = new Button("Refresh Articles");
         refreshArticleButton.setOnAction(e -> {
         	showManageHelpArticlesPage(stage);
 
         });
-        gridPane.add(refreshArticleButton, 2, 2);
 
         // Delete Article button
         Button deleteArticleButton = new Button("Delete Article");
@@ -622,12 +627,11 @@ public class App extends Application {
 
                 Optional<ButtonType> result = confirmationAlert.showAndWait();
                 if (result.isPresent() && result.get() == yesButton) {
-                    helpService.deleteArticle(selectedArticle.get(1)); 
+                    helpService.deleteArticle(selectedArticle.get(0)); 
                     showManageHelpArticlesPage(stage); // Refresh page
                 }
             }
         });
-        gridPane.add(deleteArticleButton, 0, 3);
 
 
         /***************************************************************
@@ -690,9 +694,14 @@ public class App extends Application {
 
             showManageHelpArticlesPage(stage);
         });
-        gridPane.add(backupButton, 0, 4);
 
 
+        
+        /***************************************************************
+         * 
+         * RESTORING ARTICLES 
+         *  
+         ***************************************************************/
 
         Button restoreButton = new Button("Restore");
         restoreButton.setOnAction(e -> {
@@ -732,18 +741,43 @@ public class App extends Application {
                     }
                 }
             });
-
+            
             // Refresh page if necessary
             showManageHelpArticlesPage(stage);
         });
-        gridPane.add(restoreButton, 1, 4);
 
-        // Group Articles Button
-        Button groupButton = new Button("Manage Groups");
-        groupButton.setOnAction(e -> {
-            helpService.manageGroupsForm();
+        // group articles button 
+        Button filterByGroupButton = new Button("Filter by Group");
+        filterByGroupButton.setOnAction(e -> {
+            List<String> availableGroups = helpRepo.getAvailableGroups();
+            System.out.println("Available Groups: " + availableGroups);
+
+            // create a custom dialog for group selection
+            Dialog<ButtonType> groupDialog = new Dialog<>();
+            groupDialog.setTitle("Select Article Groups");
+            groupDialog.setHeaderText("Choose groups to filter articles");
+
+            // Create a ListView for group selection
+            ListView<String> listView = new ListView<>();
+            listView.getItems().addAll(availableGroups);
+            listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+            // set dialog's content to the ListView
+            DialogPane dialogPane = groupDialog.getDialogPane();
+            dialogPane.setContent(listView);
+            dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+            // Show the dialog and check the result
+            groupDialog.showAndWait().ifPresent(result -> {
+                if (result == ButtonType.OK) {
+                    // Retrieve selected groups from ListView
+                    List<String> selectedGroups = new ArrayList<>(listView.getSelectionModel().getSelectedItems());
+                    System.out.println("Selected Groups: " + selectedGroups);
+
+helpService.loadArticlesIntoTable(tableView, selectedGroups);
+                }
+            });
         });
-        gridPane.add(groupButton, 0, 5);
 
         // Search Bar
         TextField searchField = new TextField();
@@ -751,7 +785,6 @@ public class App extends Application {
         searchField.textProperty().addListener((observable, oldValue, newValue) -> {
             helpService.searchArticlesByKeyword(newValue, tableView);
         });
-        gridPane.add(searchField, 0, 6, 2, 1); // Span two columns
 
         // Logout button
         Button logoutButton = new Button("Logout");
@@ -763,7 +796,6 @@ public class App extends Application {
                 ex.printStackTrace();
             }
         });
-        gridPane.add(logoutButton, 1, 7);
         
         Button backButton = new Button("Back");
         backButton.setOnAction(e -> {
@@ -781,7 +813,21 @@ public class App extends Application {
 				e1.printStackTrace();
 			}
         });
-        gridPane.add(backButton, 2, 7);
+        
+        
+        // Add gridPane elements
+        gridPane.add(titleLabel, 0, 0, 3, 1); 
+        gridPane.add(searchField, 0, 1, 3, 1); 
+        gridPane.add(tableView, 0, 2, 3, 1); 
+        gridPane.add(createArticleButton, 0, 3); 
+        gridPane.add(updateArticleButton, 1, 3); 
+        gridPane.add(refreshArticleButton, 2, 3); 
+        gridPane.add(deleteArticleButton, 0, 4); 
+        gridPane.add(backupButton, 1, 4); 
+        gridPane.add(restoreButton, 2, 4); 
+        gridPane.add(filterByGroupButton, 0, 5); 
+        gridPane.add(backButton, 0, 6); 
+        gridPane.add(logoutButton, 1, 6); 
 
         // Set the Scene and show the Stage
         Scene scene = new Scene(gridPane, 800, 600);

@@ -186,85 +186,83 @@ public class HelpArticleRepository {
 	
 
 	public List<HelpArticle> getArticlesByGroups(List<String> groups) {
-		List<HelpArticle> articles = new ArrayList<>();
-		
-		if (groups == null || groups.isEmpty()) {
-			return articles; // Return empty if no groups provided
-		}
+	    List<HelpArticle> articles = new ArrayList<>();
+	    
+	    if (groups == null || groups.isEmpty()) {
+	        return articles; // Return empty if no groups provided
+	    }
 
-		// Prepare the SQL query with appropiate amount of ?s
-		StringBuilder queryBuilder = new StringBuilder("SELECT * FROM help_articles WHERE group_identifiers IN (");
-		for (int i = 0; i < groups.size(); i++) {
-			queryBuilder.append("?");
-			if (i < groups.size() - 1) {
-				queryBuilder.append(", ");
-			}
-		}
-		queryBuilder.append(")");
+	    // Prepare the SQL query using LIKE for each group
+	    StringBuilder queryBuilder = new StringBuilder("SELECT * FROM help_articles WHERE ");
+	    for (int i = 0; i < groups.size(); i++) {
+	        queryBuilder.append("group_identifiers LIKE ?");
+	        if (i < groups.size() - 1) {
+	            queryBuilder.append(" OR "); // Use OR to match any group
+	        }
+	    }
 
-		String query = queryBuilder.toString();
+	    String query = queryBuilder.toString();
 
-		// response -----
-		try (PreparedStatement stmt = connection.prepareStatement(query)) {
-			// Set the parameters for the prepared statement
-			for (int i = 0; i < groups.size(); i++) {
-				stmt.setString(i + 1, groups.get(i));
-			}
+	    try (PreparedStatement stmt = connection.prepareStatement(query)) {
+	        // Set the parameters for the prepared statement
+	        for (int i = 0; i < groups.size(); i++) {
+	            stmt.setString(i + 1, "%" + groups.get(i) + "%"); // Wildcard for partial match
+	        }
 
-			try (ResultSet rs = stmt.executeQuery()) {
-				while (rs.next()) {
-					// Convert comma-separated strings to appropriate collections
-					Set<String> keywords = new HashSet<>();
-					String keywordString = rs.getString("keywords");
-					if (keywordString != null && !keywordString.trim().isEmpty()) {
-						String[] keywordArray = keywordString.split(",");
-						for (String keyword : keywordArray) {
-							keywords.add(keyword.trim());
-						}
-					}
+	        try (ResultSet rs = stmt.executeQuery()) {
+	            while (rs.next()) {
+	                // Convert comma-separated strings to appropriate collections
+	                Set<String> keywords = new HashSet<>();
+	                String keywordString = rs.getString("keywords");
+	                if (keywordString != null && !keywordString.trim().isEmpty()) {
+	                    String[] keywordArray = keywordString.split(",");
+	                    for (String keyword : keywordArray) {
+	                        keywords.add(keyword.trim());
+	                    }
+	                }
 
-					List<String> links = new ArrayList<>();
-					String linkString = rs.getString("links");
-					if (linkString != null && !linkString.trim().isEmpty()) {
-						String[] linkArray = linkString.split(",");
-						for (String link : linkArray) {
-							links.add(link.trim());
-						}
-					}
+	                List<String> links = new ArrayList<>();
+	                String linkString = rs.getString("links");
+	                if (linkString != null && !linkString.trim().isEmpty()) {
+	                    String[] linkArray = linkString.split(",");
+	                    for (String link : linkArray) {
+	                        links.add(link.trim());
+	                    }
+	                }
 
-					Set<String> groupIdentifiers = new HashSet<>();
-					String groupIdentifierString = rs.getString("group_identifiers");
-					if (groupIdentifierString != null && !groupIdentifierString.trim().isEmpty()) {
-						String[] groupArray = groupIdentifierString.split(",");
-						for (String group : groupArray) {
-							groupIdentifiers.add(group.trim());
-						}
-					}
+	                Set<String> groupIdentifiers = new HashSet<>();
+	                String groupIdentifierString = rs.getString("group_identifiers");
+	                if (groupIdentifierString != null && !groupIdentifierString.trim().isEmpty()) {
+	                    String[] groupArray = groupIdentifierString.split(",");
+	                    for (String group : groupArray) {
+	                        groupIdentifiers.add(group.trim());
+	                    }
+	                }
 
-					// Instantiate HelpArticle using the constructor with collections
-					HelpArticle article = new HelpArticle(
-						rs.getLong("id"),
-						rs.getString("header"),
-						rs.getString("level"),
-						rs.getString("title"),
-						rs.getString("short_description"),
-						keywords,
-						rs.getString("body"),
-						links,
-						groupIdentifiers,
-						rs.getBoolean("is_sensitive"),
-						rs.getString("safe_title"),
-						rs.getString("safe_description")
-					);
+	                // Instantiate HelpArticle using the constructor with collections
+	                HelpArticle article = new HelpArticle(
+	                    rs.getLong("id"),
+	                    rs.getString("header"),
+	                    rs.getString("level"),
+	                    rs.getString("title"),
+	                    rs.getString("short_description"),
+	                    keywords,
+	                    rs.getString("body"),
+	                    links,
+	                    groupIdentifiers,
+	                    rs.getBoolean("is_sensitive"),
+	                    rs.getString("safe_title"),
+	                    rs.getString("safe_description")
+	                );
 
-					articles.add(article);
-				}
-			}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
+	                articles.add(article);
+	            }
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	    }
 
-		return articles;
+	    return articles;
 	}
 	
 

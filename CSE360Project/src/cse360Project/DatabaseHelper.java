@@ -45,6 +45,7 @@ class DatabaseHelper {
 			statement = connection.createStatement(); 
 			createTables();  // Create the necessary tables if they don't exist
 			insertDefaultRoles(); // Insert the default roles if they don't exist
+			displayHelpArticles();
 		} catch (ClassNotFoundException e) {
 			System.err.println("JDBC Driver not found: " + e.getMessage());
 		}
@@ -285,6 +286,50 @@ class DatabaseHelper {
 		} catch(SQLException se){ 
 			se.printStackTrace(); 
 		} 
+	}
+	
+	
+	public void displayHelpArticles() throws SQLException {
+	    String sql = "SELECT id, header, level, title, short_description, keywords, "
+	               + "body, links, group_identifiers, is_sensitive, safe_title, safe_description "
+	               + "FROM help_articles";
+
+	    Statement stmt = connection.createStatement();
+	    ResultSet rs = stmt.executeQuery(sql);
+
+	    while (rs.next()) {
+	        long id = rs.getLong("id");
+	        String header = rs.getString("header");
+	        String level = rs.getString("level");
+	        String title = rs.getString("title");
+	        String shortDescription = rs.getString("short_description");
+	        String keywords = rs.getString("keywords");
+	        String body = rs.getString("body");
+	        String links = rs.getString("links");
+	        String groupIdentifiers = rs.getString("group_identifiers");
+	        boolean isSensitive = rs.getBoolean("is_sensitive");
+	        String safeTitle = rs.getString("safe_title");
+	        String safeDescription = rs.getString("safe_description");
+
+	        // Display values
+	        System.out.println("ID: " + id);
+	        System.out.println("Header: " + header);
+	        System.out.println("Level: " + level);
+	        System.out.println("Title: " + title);
+	        System.out.println("Short Description: " + shortDescription);
+	        System.out.println("Keywords: " + keywords);
+	        System.out.println("Body: " + body);
+	        System.out.println("Links: " + links);
+	        System.out.println("Group Identifiers: " + groupIdentifiers);
+	        System.out.println("Is Sensitive: " + isSensitive);
+	        System.out.println("Safe Title: " + safeTitle);
+	        System.out.println("Safe Description: " + safeDescription);
+	        System.out.println("----------------------------------------"); // Separator for clarity
+	    }
+
+	    // Clean up
+	    rs.close();
+	    stmt.close();
 	}
 	
 	public void displayAllTablesAndColumns() throws SQLException {
