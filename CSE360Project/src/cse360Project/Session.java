@@ -4,6 +4,19 @@ import java.util.List;
 
 import cse360Project.model.User;
 
+/*******
+ * <p> App Class </p>
+ * 
+ * <p> Description: An application class which controls the main flow of the GUI and application. </p>
+ * 
+ * <p> Copyright: Carlos Hernandez © 2024 </p>
+ * 
+ * @author Carlos Hernandez
+ * 
+ * @version 1.0.0	2024-10-09 Updated for Phase 1
+ * @version 2.0.0   2024-10-30 Updated for Phase 2
+ */
+
 public class Session {
     /**********************************************************************************************
      * Attributes

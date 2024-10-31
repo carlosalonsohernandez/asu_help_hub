@@ -46,7 +46,7 @@ import javafx.scene.layout.GridPane;
  * @author Carlos Hernandez
  * 
  * @version 1.0.0	2024-10-09 Updated for Phase 1
- * 
+ * @version 2.0.0   2024-10-30 Updated for Phase 2
  */
 
 public class App extends Application {
