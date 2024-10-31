@@ -55,56 +55,100 @@ class DatabaseHelper {
 	}
 	
 	private void createTables() throws SQLException {
-		// Updated user table creation
-		String userTable = "CREATE TABLE IF NOT EXISTS users ("
-		        + "id INT AUTO_INCREMENT PRIMARY KEY, "
-		        + "email VARCHAR(255) UNIQUE, "
-		        + "username VARCHAR(255) UNIQUE NOT NULL, "
-		        + "firstName VARCHAR(255), "
-		        + "middleName VARCHAR(255), "  
-		        + "lastName VARCHAR(255), "
-		        + "preferredName VARCHAR(255), " 
-		        + "hashedPassword VARCHAR(255) NOT NULL, "
-		        + "randSalt VARCHAR(255) NOT NULL, "
-		        + "otp VARCHAR(10), " // Column for storing the one-time password
-		        + "otp_expiration TIMESTAMP" // Column for storing the expiration time of the OTP
-		        + ")";
-		statement.execute(userTable);
-		
-		// Create roles table
-		String rolesTable = "CREATE TABLE IF NOT EXISTS roles ("
-		        + "id INT AUTO_INCREMENT PRIMARY KEY, "
-		        + "role_name VARCHAR(20) UNIQUE NOT NULL)";
-		statement.execute(rolesTable);
-		
-		// Create invitations table
-		String invitationsTable = "CREATE TABLE IF NOT EXISTS invitations ("
-		        + "invite_code VARCHAR(255) PRIMARY KEY, "
-		        + "used BOOLEAN DEFAULT false)";  // Indicates whether the invitation has been used
-		
-		statement.execute(invitationsTable);
-		
-	    // Create invitations roles relationship[ table
-		String invitationsRolesTable = "CREATE TABLE IF NOT EXISTS invitation_roles ("
-		        + "invite_code VARCHAR(255), "
-		        + "role_id INT, "
-		        + "FOREIGN KEY (invite_code) REFERENCES invitations(invite_code) ON DELETE CASCADE, "
-		        + "FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE, "
-		        + "PRIMARY KEY (invite_code, role_id))";
+	    // User table
+	    String userTable = "CREATE TABLE IF NOT EXISTS users ("
+	            + "id INT AUTO_INCREMENT PRIMARY KEY, "
+	            + "email VARCHAR(255) UNIQUE, "
+	            + "username VARCHAR(255) UNIQUE NOT NULL, "
+	            + "firstName VARCHAR(255), "
+	            + "middleName VARCHAR(255), "
+	            + "lastName VARCHAR(255), "
+	            + "preferredName VARCHAR(255), "
+	            + "hashedPassword VARCHAR(255) NOT NULL, "
+	            + "randSalt VARCHAR(255) NOT NULL, "
+	            + "otp VARCHAR(10), "
+	            + "otp_expiration TIMESTAMP)";
+	    statement.execute(userTable);
 
-		statement.execute(invitationsRolesTable);
+	    // Roles table
+	    String rolesTable = "CREATE TABLE IF NOT EXISTS roles ("
+	            + "id INT AUTO_INCREMENT PRIMARY KEY, "
+	            + "role_name VARCHAR(20) UNIQUE NOT NULL)";
+	    statement.execute(rolesTable);
 
+	    // Invitations table
+	    String invitationsTable = "CREATE TABLE IF NOT EXISTS invitations ("
+	            + "invite_code VARCHAR(255) PRIMARY KEY, "
+	            + "used BOOLEAN DEFAULT false)";
+	    statement.execute(invitationsTable);
 
-		// Create user_roles join table
-		String userRolesTable = "CREATE TABLE IF NOT EXISTS user_roles ("
-		        + "user_id INT NOT NULL, "
-		        + "role_id INT NOT NULL, "
-		        + "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, "
-		        + "FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE, "
-		        + "PRIMARY KEY (user_id, role_id))";
-		statement.execute(userRolesTable);
+	    // Invitation roles relationship table
+	    String invitationsRolesTable = "CREATE TABLE IF NOT EXISTS invitation_roles ("
+	            + "invite_code VARCHAR(255), "
+	            + "role_id INT, "
+	            + "FOREIGN KEY (invite_code) REFERENCES invitations(invite_code) ON DELETE CASCADE, "
+	            + "FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE, "
+	            + "PRIMARY KEY (invite_code, role_id))";
+	    statement.execute(invitationsRolesTable);
+
+	    // User roles table
+	    String userRolesTable = "CREATE TABLE IF NOT EXISTS user_roles ("
+	            + "user_id INT NOT NULL, "
+	            + "role_id INT NOT NULL, "
+	            + "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE, "
+	            + "FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE, "
+	            + "PRIMARY KEY (user_id, role_id))";
+	    statement.execute(userRolesTable);
+
+	    // HelpArticles table
+	    String helpArticlesTable = "CREATE TABLE IF NOT EXISTS help_articles ("
+	            + "id BIGINT AUTO_INCREMENT PRIMARY KEY, "
+	            + "header VARCHAR(255) NOT NULL, "
+	            + "level VARCHAR(50) NOT NULL, "
+	            + "title VARCHAR(255) NOT NULL, "
+	            + "short_description TEXT NOT NULL, "
+	            + "keywords TEXT, "  // Stores a comma-separated list of keywords
+	            + "body TEXT NOT NULL, "
+	            + "links TEXT, " // Comma-separated list of URLs or link identifiers
+	            + "group_identifiers TEXT, "  // Comma-separated list of group IDs
+	            + "is_sensitive BOOLEAN DEFAULT false, "  // Flag indicating if article has restricted access
+	            + "safe_title VARCHAR(255), "  // Title without sensitive information
+	            + "safe_description TEXT "  // Description without sensitive information
+	            + ")";
+	    statement.execute(helpArticlesTable);
+
+	    // Create help_article_groups table to associate articles with groups
+	    String helpArticleGroupsTable = "CREATE TABLE IF NOT EXISTS help_article_groups ("
+	            + "article_id BIGINT NOT NULL, "
+	            + "group_name VARCHAR(100) NOT NULL, "
+	            + "FOREIGN KEY (article_id) REFERENCES help_articles(id) ON DELETE CASCADE, "
+	            + "PRIMARY KEY (article_id, group_name))";
+	    statement.execute(helpArticleGroupsTable);
+
+	    // Keywords table
+	    String keywordsTable = "CREATE TABLE IF NOT EXISTS keywords ("
+	            + "keyword_id BIGINT AUTO_INCREMENT PRIMARY KEY, "
+	            + "keyword VARCHAR(255) UNIQUE NOT NULL)";
+	    statement.execute(keywordsTable);
+
+	    // ArticleKeywords table
+	    String articleKeywordsTable = "CREATE TABLE IF NOT EXISTS article_keywords ("
+	            + "article_id BIGINT, "
+	            + "keyword_id BIGINT, "
+	            + "FOREIGN KEY (article_id) REFERENCES help_articles(id) ON DELETE CASCADE, "
+	            + "FOREIGN KEY (keyword_id) REFERENCES keywords(keyword_id) ON DELETE CASCADE, "
+	            + "PRIMARY KEY (article_id, keyword_id))";
+	    statement.execute(articleKeywordsTable);
+
+	    // Backups table
+	    String backupsTable = "CREATE TABLE IF NOT EXISTS backups ("
+	            + "backup_id BIGINT AUTO_INCREMENT PRIMARY KEY, "
+	            + "file_name VARCHAR(255) NOT NULL, "
+	            + "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP, "
+	            + "user_id INT, "
+	            + "FOREIGN KEY (user_id) REFERENCES users(id))";
+	    statement.execute(backupsTable);
 	}
-	
 	// insert default roles into roles table if not already there 
 	private void insertDefaultRoles() throws SQLException {
 	    // Insert Admin role if not exists
@@ -132,29 +176,45 @@ class DatabaseHelper {
 
 	// Method to delete the tables from the database
 	public void dropTables() throws SQLException {
+	    String dropQuery;
 
-	    String dropQuery = "DROP TABLE IF EXISTS user_topics"; 
+	    // Drop tables with foreign key dependencies first
+	    dropQuery = "DROP TABLE IF EXISTS article_keywords";
 	    statement.executeUpdate(dropQuery);
-	    
-	    dropQuery = "DROP TABLE IF EXISTS user_roles"; 
+
+	    dropQuery = "DROP TABLE IF EXISTS article_groups";
 	    statement.executeUpdate(dropQuery);
-	    
+
+	    dropQuery = "DROP TABLE IF EXISTS user_roles";
+	    statement.executeUpdate(dropQuery);
+
 	    dropQuery = "DROP TABLE IF EXISTS invitation_roles";
+	    statement.executeUpdate(dropQuery);
+
+	    // Drop independent tables next
+	    dropQuery = "DROP TABLE IF EXISTS backups";
 	    statement.executeUpdate(dropQuery);
 
 	    dropQuery = "DROP TABLE IF EXISTS invitations";
 	    statement.executeUpdate(dropQuery);
-	    
-	    // Now drop the users and roles tables
+
+	    dropQuery = "DROP TABLE IF EXISTS help_articles";
+	    statement.executeUpdate(dropQuery);
+
+	    dropQuery = "DROP TABLE IF EXISTS groups";
+	    statement.executeUpdate(dropQuery);
+
+	    dropQuery = "DROP TABLE IF EXISTS keywords";
+	    statement.executeUpdate(dropQuery);
+
 	    dropQuery = "DROP TABLE IF EXISTS users";
 	    statement.executeUpdate(dropQuery);
-	    
+
 	    dropQuery = "DROP TABLE IF EXISTS roles";
 	    statement.executeUpdate(dropQuery);
-	    
-	    System.out.println("Tables have been dropped.");
-	}
 
+	    System.out.println("All tables have been dropped.");
+	}
 
 	// Check if the database is empty
 	public boolean isDatabaseEmpty() throws SQLException {
