@@ -2,13 +2,13 @@ package cse360Project;
 
 import javafx.application.Application;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
-import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.DialogPane;
 import javafx.stage.Stage;
@@ -205,7 +205,15 @@ public class App extends Application {
                     }
                 } else {
                     // User is not an admin, go to student/instructor home page
-                    showStudentAndInstructorHomePage(primaryStage);
+                	if(roles.size() > 1) {
+                		showRoleSelectionPopup(roles, primaryStage);
+                	} else {
+                		if(roles.stream().anyMatch(role -> role.equalsIgnoreCase("instructor"))) {
+                			showInstructorHomePage(primaryStage);
+                		} else {
+                			showStudentHomePage(primaryStage);
+                		}
+                	}
                 }
             } else {
                 // Finish your account login
@@ -306,8 +314,10 @@ public class App extends Application {
         result.ifPresent(selectedRole -> {
             if (selectedRole.equals("admin")) {
                 showAdminHomePage(primaryStage);
+            } else if(selectedRole.equals("instructor")) {
+            	showInstructorHomePage(primaryStage);
             } else {
-                showStudentAndInstructorHomePage(primaryStage);
+                showStudentHomePage(primaryStage);
             }
         });
     }
@@ -587,6 +597,13 @@ public class App extends Application {
             }
         });
         gridPane.add(updateArticleButton, 1, 2);
+        
+        Button refreshArticleButton = new Button("Refresh Articles");
+        refreshArticleButton.setOnAction(e -> {
+        	showManageHelpArticlesPage(stage);
+
+        });
+        gridPane.add(refreshArticleButton, 2, 2);
 
         // Delete Article button
         Button deleteArticleButton = new Button("Delete Article");
@@ -747,12 +764,86 @@ public class App extends Application {
             }
         });
         gridPane.add(logoutButton, 1, 7);
+        
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> {
+        	try {
+				if(roleRepo.getRolesForUser(Session.getInstance().getCurrentUser().getId())
+						.stream()
+						.map(Role::getRoleName)
+						.anyMatch(p -> p.equals("admin"))) {
+					showAdminHomePage(stage);
+				} else {
+					showInstructorHomePage(stage);
+				}
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+        });
+        gridPane.add(backButton, 2, 7);
 
         // Set the Scene and show the Stage
         Scene scene = new Scene(gridPane, 800, 600);
         stage.setScene(scene);
     }
     
+    private void showInstructorHomePage(Stage stage) {
+        stage.setTitle("Home");
+        
+        // GridPane layout with padding
+        GridPane gridPane = new GridPane();
+        gridPane.setPadding(new Insets(10)); // Adds padding to avoid elements near edges
+        gridPane.setHgap(10); // Horizontal spacing between elements
+        gridPane.setVgap(10); // Vertical spacing between elements
+        
+        Label helloLabel = new Label("Welcome and hello " + Session.getInstance().getCurrentUser().getFirstName() + " " + Session.getInstance().getCurrentUser().getLastName() + "!");
+
+        Button manageHelpArticlesButton = new Button("Manage Help Articles");
+        manageHelpArticlesButton.setOnAction(e -> {
+        	try {
+				showManageHelpArticlesPage(stage);
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+
+        });
+
+        // logout 
+        Button logoutButton = new Button("Logout");
+        
+        logoutButton.setOnAction(e -> {
+        	Session.getInstance().clear();
+        	try {
+				start(stage);
+			} catch (UnsupportedEncodingException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+
+        });
+
+        // Add elements to the GridPane
+
+        gridPane.add(helloLabel, 0, 1);
+        gridPane.add(manageHelpArticlesButton, 0, 2);
+        gridPane.add(logoutButton, 0, 3);
+        
+        // use scroll pane for potentially long list of users
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setContent(gridPane);
+
+        // Set the Scene and show the Stage
+        Scene scene = new Scene(scrollPane, 400, 300); // Width and Height
+        stage.setScene(scene);
+		
+	}
+
+
     public void showManageUsersPage(Stage stage) {
         stage.setTitle("Manage Student Accounts");
 
@@ -767,7 +858,7 @@ public class App extends Application {
         gridPane.add(titleLabel, 0, 0, 2, 1); // Span two columns
 
         // Table to display user accounts
-        TableView<List<String>> tableView = new TableView<>(); 
+        TableView<List<String>> tableView = new TableView<>();
         TableColumn<List<String>, String> usernameCol = new TableColumn<>("Username");
         usernameCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(0))); // Access username
         TableColumn<List<String>, String> nameCol = new TableColumn<>("Name");
@@ -784,18 +875,16 @@ public class App extends Application {
         resetPasswordButton.setOnAction(e -> {
             List<String> selectedUser = tableView.getSelectionModel().getSelectedItem();
             if (selectedUser != null) {
-               try {
-				userService.resetUserPassword(selectedUser.get(0));
-			} catch (Exception e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			} // Assuming username is at index 0
+                try {
+                    userService.resetUserPassword(selectedUser.get(0));
+                } catch (Exception e1) {
+                    e1.printStackTrace();
+                } // Assuming username is at index 0
             }
         });
         gridPane.add(resetPasswordButton, 0, 2);
 
-
-     // Delete User button
+        // Delete User button
         Button deleteUserButton = new Button("Delete User");
         deleteUserButton.setOnAction(e -> {
             List<String> selectedUser = tableView.getSelectionModel().getSelectedItem();
@@ -817,7 +906,7 @@ public class App extends Application {
                     // User confirmed deletion
                     userRepo.deleteUserAccount(selectedUser.get(0)); // Assuming username is at index 0
                     // Refresh view to update table
-                    showManageUsersPage(stage);
+                    userService.loadUsersIntoTable(tableView); // Reload users without reinitializing the entire page
                 } else {
                     // User canceled the deletion, no action needed
                     System.out.println("Deletion aborted.");
@@ -829,6 +918,37 @@ public class App extends Application {
         });
         gridPane.add(deleteUserButton, 1, 2);
 
+        // Manage Roles button
+        Button manageRolesButton = new Button("Manage Roles");
+        manageRolesButton.setOnAction(e -> {
+            List<String> selectedUser = tableView.getSelectionModel().getSelectedItem();
+            if (selectedUser != null) {
+                String username = selectedUser.get(0); // Assuming username is at index 0
+                try {
+                    showManageRolesDialog(username);
+                } catch (SQLException e1) {
+                    e1.printStackTrace();
+                }
+            } else {
+                System.out.println("No user selected for role management.");
+            }
+        });
+        gridPane.add(manageRolesButton, 0, 3);
+
+        // Refresh button
+        Button refreshButton = new Button("Refresh");
+        refreshButton.setOnAction(e -> {
+            userService.loadUsersIntoTable(tableView); // Reload users into the table
+        });
+        gridPane.add(refreshButton, 1, 3);
+
+        // Back button
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> {
+            showAdminHomePage(stage); // Navigate back to admin home
+        });
+        gridPane.add(backButton, 0, 4);
+
         // Logout button
         Button logoutButton = new Button("Logout");
         logoutButton.setOnAction(e -> {
@@ -839,7 +959,7 @@ public class App extends Application {
                 ex.printStackTrace();
             }
         });
-        gridPane.add(logoutButton, 1, 3);
+        gridPane.add(logoutButton, 1, 4);
 
         // Set the Scene and show the Stage
         Scene scene = new Scene(gridPane, 600, 400);
@@ -847,7 +967,7 @@ public class App extends Application {
     }
     
 
-	public void showStudentAndInstructorHomePage(Stage stage) {
+	public void showStudentHomePage(Stage stage) {
         stage.setTitle("Home");
         
         // GridPane layout with padding
@@ -951,6 +1071,63 @@ public class App extends Application {
         Scene scene = new Scene(scrollPane, 400, 300); // Width and Height
         stage.setScene(scene);
     }
+    
+    // Method to show the dialog for managing roles
+    private void showManageRolesDialog(String username) throws SQLException {
+        Stage dialogStage = new Stage();
+        dialogStage.setTitle("Manage Roles for " + username);
+
+        // Create a VBox layout
+        VBox vbox = new VBox(10);
+        vbox.setPadding(new Insets(10));
+
+        // Load current roles for the user
+        List<String> currentRoles = roleRepo.getRolesForUser(userRepo.getUserIdByUsername(username))
+        		.stream().map(Role::getRoleName).toList(); 
+        ListView<String> rolesListView = new ListView<>(FXCollections.observableArrayList(currentRoles));
+        
+        // Add button to add role
+        TextField addRoleField = new TextField();
+        addRoleField.setPromptText("Enter role to add");
+        Button addRoleButton = new Button("Add Role");
+        addRoleButton.setOnAction(e -> {
+            String newRole = addRoleField.getText().trim();
+            if (!newRole.isEmpty()) {
+                try {
+					roleRepo.assignRoleToUser(userRepo.getUserIdByUsername(username), newRole);
+				} catch (SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} // Implement this method in your repo
+                rolesListView.getItems().add(newRole);
+                addRoleField.clear();
+            }
+        });
+
+        // Add button to remove selected role
+        Button removeRoleButton = new Button("Remove Selected Role");
+        removeRoleButton.setOnAction(e -> {
+            String selectedRole = rolesListView.getSelectionModel().getSelectedItem();
+            if (selectedRole != null) {
+                try {
+					roleRepo.removeRoleFromUser(userRepo.getUserIdByUsername(username), selectedRole);
+				} catch (SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				} // Implement this method in your repo
+                rolesListView.getItems().remove(selectedRole);
+            }
+        });
+
+        vbox.getChildren().addAll(new Label("Current Roles:"), rolesListView, addRoleField, addRoleButton, removeRoleButton);
+
+        // Set the Scene and show the Stage
+        Scene scene = new Scene(vbox, 300, 300);
+        dialogStage.setScene(scene);
+        dialogStage.show();
+    }
+
+    
     // Main method to launch the application
     public static void main(String[] args) {
         launch(args);

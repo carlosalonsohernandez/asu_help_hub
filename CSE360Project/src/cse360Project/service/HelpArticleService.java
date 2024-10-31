@@ -124,7 +124,6 @@ public class HelpArticleService {
         gridPane.setVgap(10);
 
         // Create input fields
-        TextField headerField = new TextField();
         TextField levelField = new TextField();
         TextField titleField = new TextField();
         TextField shortDescriptionField = new TextField();
@@ -135,23 +134,21 @@ public class HelpArticleService {
         CheckBox sensitiveCheckBox = new CheckBox("Is Sensitive");
 
         // Adding input fields to the grid
-        gridPane.add(new Label("Header:"), 0, 0);
-        gridPane.add(headerField, 1, 0);
-        gridPane.add(new Label("Level:"), 0, 1);
-        gridPane.add(levelField, 1, 1);
-        gridPane.add(new Label("Title:"), 0, 2);
-        gridPane.add(titleField, 1, 2);
-        gridPane.add(new Label("Short Description:"), 0, 3);
-        gridPane.add(shortDescriptionField, 1, 3);
-        gridPane.add(new Label("Body:"), 0, 4);
-        gridPane.add(bodyField, 1, 4);
-        gridPane.add(new Label("Keywords (comma-separated):"), 0, 5);
-        gridPane.add(keywordsField, 1, 5);
-        gridPane.add(new Label("Links (comma-separated):"), 0, 6);
-        gridPane.add(linksField, 1, 6);
-        gridPane.add(new Label("Group Identifiers (comma-separated):"), 0, 7);
-        gridPane.add(groupIdentifiersField, 1, 7);
-        gridPane.add(sensitiveCheckBox, 1, 8);
+        gridPane.add(new Label("Level:"), 0, 0);
+        gridPane.add(levelField, 1, 0);
+        gridPane.add(new Label("Title:"), 0, 1);
+        gridPane.add(titleField, 1, 1);
+        gridPane.add(new Label("Short Description:"), 0, 2);
+        gridPane.add(shortDescriptionField, 1, 2);
+        gridPane.add(new Label("Body:"), 0, 3);
+        gridPane.add(bodyField, 1, 3);
+        gridPane.add(new Label("Keywords (comma-separated):"), 0, 4);
+        gridPane.add(keywordsField, 1, 4);
+        gridPane.add(new Label("Links (comma-separated):"), 0, 5);
+        gridPane.add(linksField, 1, 5);
+        gridPane.add(new Label("Group Identifiers (comma-separated):"), 0, 6);
+        gridPane.add(groupIdentifiersField, 1, 6);
+        gridPane.add(sensitiveCheckBox, 1, 7);
 
         // Create button to save the article
         Button createButton = new Button("Create Article");
@@ -178,7 +175,7 @@ public class HelpArticleService {
             try {
                 HelpArticle article = new HelpArticle(
                         null, // ID will be auto-generated
-                        headerField.getText(),
+                        groupIdentifiersField.getText()+ ":" + levelField.getText() + ":" + titleField.getText(),
                         levelField.getText(),
                         titleField.getText(),
                         shortDescriptionField.getText(),
