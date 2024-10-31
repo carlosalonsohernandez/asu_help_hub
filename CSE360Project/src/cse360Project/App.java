@@ -705,7 +705,7 @@ public class App extends Application {
 
                     if (fileName != null && !fileName.trim().isEmpty()) {
                         try {
-                            helpRepo.restoreArticles(fileName.trim(), merge);
+                            helpRepo.restoreArticles(fileName.trim(), !merge);
                             helpService.showInfo("Restore successful from " + fileName);
                         } catch (IOException | SQLException ex) {
                             helpService.showError("Restore failed: " + ex.getMessage());
