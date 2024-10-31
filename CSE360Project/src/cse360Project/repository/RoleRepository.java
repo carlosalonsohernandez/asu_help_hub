@@ -119,4 +119,44 @@ public class RoleRepository {
         }
         return roleNames;
     }
+    
+    // helper function to see if a role exists
+    public boolean doesRoleExist(String roleName) throws SQLException {
+        String query = "SELECT COUNT(*) AS count FROM roles WHERE role_name = ?";
+        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+            pstmt.setString(1, roleName);
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("count") > 0; // Return true if the count is greater than 0
+                }
+            }
+        }
+        return false; // Return false if no result was found
+    }
+    
+    public void assignRoleToUser(int userId, String roleName) throws SQLException {
+        String insertUserRoleSql = "INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)";
+        if(!doesRoleExist(roleName)) {
+        	insertRole(roleName);
+        }
+        
+        int roleId = getRoleIdByName(roleName);
+        
+        try (PreparedStatement pstmt = connection.prepareStatement(insertUserRoleSql)) {
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, roleId);
+            pstmt.executeUpdate();
+        }
+    }
+    
+    
+    public void removeRoleFromUser(int userId, String roleName) throws SQLException {
+        String deleteUserRoleSql = "DELETE FROM user_roles WHERE user_id = ? AND role_id = ?";
+        int roleId = getRoleIdByName(roleName);
+        try (PreparedStatement pstmt = connection.prepareStatement(deleteUserRoleSql)) {
+            pstmt.setInt(1, userId);
+            pstmt.setInt(2, roleId);
+            pstmt.executeUpdate();
+        }
+    }
 }

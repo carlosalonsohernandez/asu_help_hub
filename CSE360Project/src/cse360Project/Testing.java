@@ -15,10 +15,10 @@ public class Testing {
 
     @Test
     public void testHashedPasswordAndSalt() {
-        assertNotNull(password.getHashedPassword(), "Hashed password should not be null");
-        assertNotNull(password.getRandSalt(), "Salt should not be null");
-        assertTrue(password.getHashedPassword().length > 0, "Hashed password should have length greater than 0");
-        assertTrue(password.getRandSalt().length > 0, "Salt should have length greater than 0");
+        assertNotNull(password.getHashedPass(), "Hashed password should not be null");
+        assertNotNull(password.getSalt(), "Salt should not be null");
+        assertTrue(password.getHashedPass().length > 0, "Hashed password should have length greater than 0");
+        assertTrue(password.getSalt().length > 0, "Salt should have length greater than 0");
     }
 
     @Test
@@ -34,7 +34,7 @@ public class Testing {
     @Test
     public void testDifferentSaltsProduceDifferentHashes() throws Exception {
         Password anotherPassword = new Password("Someone1");
-        assertFalse(Arrays.equals(password.getHashedPassword(), anotherPassword.getHashedPassword()),
+        assertFalse(Arrays.equals(password.getHashedPass(), anotherPassword.getHashedPass()),
                    "Different salts should produce different hashed passwords");
     }
 }
