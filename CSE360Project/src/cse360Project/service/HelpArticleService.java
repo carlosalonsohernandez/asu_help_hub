@@ -23,6 +23,18 @@ import java.util.Set;
 import cse360Project.model.HelpArticle;
 import cse360Project.repository.HelpArticleRepository;
 
+/*******
+ * <p> HelpArticleService Class </p>
+ * 
+ * <p> Description: Service class which deals with business logic on top of the data layer. </p>
+ * 
+ * <p> Copyright: Carlos Hernandez © 2024 </p>
+ * 
+ * @author Carlos Hernandez
+ * 
+ * @version 1.0.0   2024-10-30 Updated for Phase 2
+ */
+
 public class HelpArticleService {
     private final HelpArticleRepository articleRepo;
 

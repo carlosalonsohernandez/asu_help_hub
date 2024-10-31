@@ -58,6 +58,11 @@ import javafx.scene.layout.GridPane;
  */
 
 public class App extends Application {
+	/**********************************************************************************************
+
+	Attributes
+	
+	**********************************************************************************************/
 
 	private static final DatabaseHelper databaseHelper = new DatabaseHelper();
 	private static UserRepository userRepo = null;
@@ -287,43 +292,12 @@ public class App extends Application {
         Scene scene = new Scene(gridPane, 400, 300); // Width and Height
         stage.setScene(scene);
     }
-
-	// Method to show a popup for role selection
-    private void showRoleSelectionPopup(List<String> roles, Stage primaryStage) {
-        Dialog<String> dialog = new Dialog<>();
-        dialog.setTitle("Select Role");
-        dialog.setHeaderText("Please select your role for this session:");
-
-        ListView<String> roleListView = new ListView<>();
-        roleListView.getItems().addAll(roles);
-
-        VBox vbox = new VBox(new Label("Select a role:"), roleListView);
-        dialog.getDialogPane().setContent(vbox);
-
-        ButtonType loginButtonType = new ButtonType("Login", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
-
-        dialog.setResultConverter(dialogButton -> {
-            if (dialogButton == loginButtonType) {
-                return roleListView.getSelectionModel().getSelectedItem();
-            }
-            return null;
-        });
-
-        Optional<String> result = dialog.showAndWait();
-        result.ifPresent(selectedRole -> {
-            if (selectedRole.equals("admin")) {
-                showAdminHomePage(primaryStage);
-            } else if(selectedRole.equals("instructor")) {
-            	showInstructorHomePage(primaryStage);
-            } else {
-                showStudentHomePage(primaryStage);
-            }
-        });
-    }
-
     
-  
+	/**********************************************************************************************
+
+	Pages
+	
+	**********************************************************************************************/
    // Show the registration page 
     public void showRegistrationPage(Stage stage) {
         stage.setTitle("Registration");
@@ -586,13 +560,22 @@ public class App extends Application {
         tableView.getColumns().addAll(headerCol, titleCol, descriptionCol, levelCol);
         helpService.loadArticlesIntoTable(tableView); // Load article data into the table
 
-        // Create Article button
+        /***************************************************************
+         * 
+         * CREATING ARTICLES 
+         *  
+         ***************************************************************/
         Button createArticleButton = new Button("Create Article");
         createArticleButton.setOnAction(e -> {
             // Code to open a form for creating a new article
             helpService.createNewArticleForm();
         });
 
+        /***************************************************************
+         * 
+         * UPDATING ARTICLES
+         *  
+         ***************************************************************/
         // Update Article button
         Button updateArticleButton = new Button("Update Article");
         updateArticleButton.setOnAction(e -> {
@@ -610,7 +593,11 @@ public class App extends Application {
 
         });
 
-        // Delete Article button
+        /***************************************************************
+         * 
+         * DELETING ARTICLES
+         *  
+         ***************************************************************/
         Button deleteArticleButton = new Button("Delete Article");
         deleteArticleButton.setOnAction(e -> {
             List<String> selectedArticle = tableView.getSelectionModel().getSelectedItem();
@@ -746,6 +733,11 @@ public class App extends Application {
             showManageHelpArticlesPage(stage);
         });
 
+        /***************************************************************
+         * 
+         * FILTERING ARTICLES BY GROUP
+         *  
+         ***************************************************************/
         // group articles button 
         Button filterByGroupButton = new Button("Filter by Group");
         filterByGroupButton.setOnAction(e -> {
@@ -779,7 +771,11 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
             });
         });
 
-        // Search Bar
+        /***************************************************************
+         * 
+         * SEARCHING ARTICLES BY KEYWORDS 
+         *  
+         ***************************************************************/
         TextField searchField = new TextField();
         searchField.setPromptText("Search articles by keyword...");
         searchField.textProperty().addListener((observable, oldValue, newValue) -> {
@@ -1118,6 +1114,47 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         stage.setScene(scene);
     }
     
+	/**********************************************************************************************
+
+	Popups/Dialogs
+	
+	**********************************************************************************************/
+    
+	// Method to show a popup for role selection
+    private void showRoleSelectionPopup(List<String> roles, Stage primaryStage) {
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle("Select Role");
+        dialog.setHeaderText("Please select your role for this session:");
+
+        ListView<String> roleListView = new ListView<>();
+        roleListView.getItems().addAll(roles);
+
+        VBox vbox = new VBox(new Label("Select a role:"), roleListView);
+        dialog.getDialogPane().setContent(vbox);
+
+        ButtonType loginButtonType = new ButtonType("Login", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
+
+        dialog.setResultConverter(dialogButton -> {
+            if (dialogButton == loginButtonType) {
+                return roleListView.getSelectionModel().getSelectedItem();
+            }
+            return null;
+        });
+
+        Optional<String> result = dialog.showAndWait();
+        result.ifPresent(selectedRole -> {
+            if (selectedRole.equals("admin")) {
+                showAdminHomePage(primaryStage);
+            } else if(selectedRole.equals("instructor")) {
+            	showInstructorHomePage(primaryStage);
+            } else {
+                showStudentHomePage(primaryStage);
+            }
+        });
+    }
+
+    
     // Method to show the dialog for managing roles
     private void showManageRolesDialog(String username) throws SQLException {
         Stage dialogStage = new Stage();
@@ -1172,7 +1209,11 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         dialogStage.setScene(scene);
         dialogStage.show();
     }
+	/**********************************************************************************************
 
+	Main
+	
+	**********************************************************************************************/
     
     // Main method to launch the application
     public static void main(String[] args) {

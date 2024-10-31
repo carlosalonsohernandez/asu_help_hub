@@ -1,5 +1,17 @@
 package cse360Project.repository;
 
+/*******
+ * <p> HelpArticleRepository Class </p>
+ * 
+ * <p> Description: Repository class to do CRUD operations and interact with the database. </p>
+ * 
+ * <p> Copyright: Carlos Hernandez, Lorenzo Martinez © 2024 </p>
+ * 
+ * @author Carlos Hernandez, Lorenzo Martinez
+ * 
+ * @version 1.0.0   2024-10-30 Updated for Phase 2
+ */
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.core.type.TypeReference;

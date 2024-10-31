@@ -5,9 +5,9 @@ import java.util.List;
 import cse360Project.model.User;
 
 /*******
- * <p> App Class </p>
+ * <p> Session Class </p>
  * 
- * <p> Description: An application class which controls the main flow of the GUI and application. </p>
+ * <p> Description: A session class which tracks the current logged in user and other functionalities like OTP usage and role invitations. </p>
  * 
  * <p> Copyright: Carlos Hernandez © 2024 </p>
  * 

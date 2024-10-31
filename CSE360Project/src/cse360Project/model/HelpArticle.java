@@ -7,9 +7,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+/*******
+ * <p> HelpArticle Class </p>
+ * 
+ * <p> Description: Object data container class which encapsulates a HelpArticle. </p>
+ * 
+ * <p> Copyright: Carlos Hernandez © 2024 </p>
+ * 
+ * @author Carlos Hernandez
+ * 
+ * @version 1.0.0   2024-10-30 Updated for Phase 2
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class HelpArticle {
-    
+	/**********************************************************************************************
+
+	Attributes
+	
+	**********************************************************************************************/
     // Unique ID for each help article
     private Long id;
     private String header;                // Unique header with article level and system info
@@ -23,6 +38,12 @@ public class HelpArticle {
     private boolean isSensitive;          // Flag for restricted/sensitive access
     private String safeTitle;             // Non-sensitive version of title
     private String safeDescription;       // Non-sensitive version of short description
+    
+	/**********************************************************************************************
+
+	Constructors
+	
+	**********************************************************************************************/
 
     // Constructor
     @JsonCreator
@@ -53,7 +74,11 @@ public class HelpArticle {
         this.safeDescription = safeDescription;
     }
 
-    // Getters and Setters
+	/**********************************************************************************************
+
+	Getters and Setters
+	
+	**********************************************************************************************/
     public Long getId() {
         return id;
     }
@@ -187,6 +212,11 @@ public class HelpArticle {
                 '}';
     }
     
+	/**********************************************************************************************
+
+	Methods
+	
+	**********************************************************************************************/
     public List<String> toList() {
         List<String> articleDetails = new ArrayList<>();
         

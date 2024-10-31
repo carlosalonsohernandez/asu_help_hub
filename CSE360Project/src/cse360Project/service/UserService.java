@@ -12,6 +12,18 @@ import cse360Project.repository.RoleRepository;
 import cse360Project.repository.UserRepository;
 import javafx.scene.control.TableView;
 
+/*******
+ * <p> UserService Class </p>
+ * 
+ * <p> Description: Service class which deals with business logic on top of the data layer. </p>
+ * 
+ * <p> Copyright: Carlos Hernandez © 2024 </p>
+ * 
+ * @author Carlos Hernandez
+ * 
+ * @version 1.0.0   2024-10-30 Updated for Phase 2
+ */
+
 public class UserService {
 
     private UserRepository userRepository;

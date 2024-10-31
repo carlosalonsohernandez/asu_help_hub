@@ -9,6 +9,18 @@ import cse360Project.Session;
 import cse360Project.model.User; // Import your User class
 import cse360Project.model.UserAccountInfo;
 
+/*******
+ * <p> UserRepository Class </p>
+ * 
+ * <p> Description: Repository class to do CRUD operations and interact with the database. </p>
+ * 
+ * <p> Copyright: Carlos Hernandez © 2024 </p>
+ * 
+ * @author Carlos Hernandez
+ * 
+ * @version 1.0.0   2024-10-30 Updated for Phase 2
+ */
+
 public class UserRepository {
 	
 	private Connection connection;

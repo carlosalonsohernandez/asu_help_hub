@@ -1,8 +1,31 @@
 package cse360Project.model;
 
+/*******
+ * <p> Invitation Class </p>
+ * 
+ * <p> Description: Object data container class which encapsulates an Invitation. </p>
+ * 
+ * <p> Copyright: Carlos Hernandez © 2024 </p>
+ * 
+ * @author Carlos Hernandez
+ * 
+ * @version 1.0.0   2024-10-30 Updated for Phase 2
+ */
+
 public class Invitation {
+	/**********************************************************************************************
+
+	Attributes
+	
+	**********************************************************************************************/
     private String inviteCode;
     private boolean used;
+    
+	/**********************************************************************************************
+
+	Constructors
+	
+	**********************************************************************************************/
 
     // Constructor, getters, and setters
     public Invitation(String inviteCode, boolean used)
@@ -22,6 +45,12 @@ public class Invitation {
     {
     	this.used = true;
     }
+    
+	/**********************************************************************************************
+
+	Getters and Setters
+	
+	**********************************************************************************************/
     
     public String getInviteCode()
     {

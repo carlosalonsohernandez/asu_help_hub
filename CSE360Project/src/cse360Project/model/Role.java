@@ -1,5 +1,17 @@
 package cse360Project.model;
 
+/*******
+ * <p> Role Class </p>
+ * 
+ * <p> Description: Object data container class which encapsulates a Role. </p>
+ * 
+ * <p> Copyright: Carlos Hernandez © 2024 </p>
+ * 
+ * @author Carlos Hernandez
+ * 
+ * @version 1.0.0   2024-10-30 Updated for Phase 2
+ */
+
 public class Role {
     private int id;
     private String roleName;

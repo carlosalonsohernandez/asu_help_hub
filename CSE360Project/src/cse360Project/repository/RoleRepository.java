@@ -9,6 +9,18 @@ import java.util.List;
 
 import cse360Project.model.Role;
 
+/*******
+ * <p> RoleRepository Class </p>
+ * 
+ * <p> Description: Repository class to do CRUD operations and interact with the database. </p>
+ * 
+ * <p> Copyright: Carlos Hernandez © 2024 </p>
+ * 
+ * @author Carlos Hernandez
+ * 
+ * @version 1.0.0   2024-10-30 Updated for Phase 2
+ */
+
 public class RoleRepository {
 
     private Connection connection;

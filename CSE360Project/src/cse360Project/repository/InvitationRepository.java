@@ -3,6 +3,18 @@ package cse360Project.repository;
 import java.sql.*;
 import java.util.List;
 
+/*******
+ * <p> Invitation Class </p>
+ * 
+ * <p> Description: Repository class to do CRUD operations and interact with the database. </p>
+ * 
+ * <p> Copyright: Carlos Hernandez © 2024 </p>
+ * 
+ * @author Carlos Hernandez
+ * 
+ * @version 1.0.0   2024-10-30 Updated for Phase 2
+ */
+
 import cse360Project.model.Invitation;
 
 public class InvitationRepository {
