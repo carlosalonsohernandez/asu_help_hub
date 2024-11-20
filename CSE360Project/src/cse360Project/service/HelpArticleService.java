@@ -51,18 +51,37 @@ public class HelpArticleService {
     }
 
     public void loadArticlesIntoTable(TableView<List<String>> tableView) {
-    	loadArticlesIntoTable(tableView, null);
+    	loadArticlesIntoTable(tableView, null, null);
     }
     
     public void loadArticlesIntoTable(TableView<List<String>> tableView, List<String> selectedGroups) {
+    	loadArticlesIntoTable(tableView, selectedGroups, null);
+    }
+    
+    public void loadArticlesIntoTable(TableView<List<String>> tableView, List<String> selectedGroups, List<String> selectedLevels) {
         try {
             List<HelpArticle> articles;
-            if (selectedGroups != null && !selectedGroups.isEmpty()) {
-                articles = articleRepo.getArticlesByGroups(selectedGroups); // Get articles based on selected groups
-                System.out.println("Selected group is not empty we got: " + articles.size());
+
+            // Check if both selectedGroups and selectedLevels have values
+            if ((selectedGroups != null && !selectedGroups.isEmpty()) && (selectedLevels != null && !selectedLevels.isEmpty())) {
+                // Get articles filtered by both groups and levels
+                articles = articleRepo.getArticlesByGroupsAndLevels(selectedGroups, selectedLevels);
+                System.out.println("Filtered by groups and levels: " + articles.size());
+            } else if (selectedGroups != null && !selectedGroups.isEmpty()) {
+                // Filter by groups only
+                articles = articleRepo.getArticlesByGroups(selectedGroups);
+                System.out.println("Filtered by groups only: " + articles.size());
+            } else if (selectedLevels != null && !selectedLevels.isEmpty()) {
+                // Filter by levels only
+                articles = articleRepo.getArticlesByLevels(selectedLevels);
+                System.out.println("Filtered by levels only: " + articles.size());
             } else {
-                articles = articleRepo.getAllArticles(); // Get all articles if no groups are selected
+                // No filtering, load all articles
+                articles = articleRepo.getAllArticles();
+                System.out.println("No filters applied, loaded all articles: " + articles.size());
             }
+
+            // Clear the table and add the articles to it
             tableView.getItems().clear();
             System.out.println("Fetched Articles: " + articles.size());
             for (HelpArticle article : articles) {
@@ -332,6 +351,12 @@ public class HelpArticleService {
         Scene scene = new Scene(gridPane, 400, 500);
         updateArticleStage.setScene(scene);
         updateArticleStage.show();
+    }
+    
+    public void loadArticlesIntoTableByLevel(TableView<HelpArticle> tableView, List<String> levels) {
+        // Implement database logic to filter articles by the `level` attribute
+        List<HelpArticle> filteredArticles = articleRepo.getArticlesByLevels(levels);
+        tableView.getItems().setAll(filteredArticles);
     }
 
     // helper functions

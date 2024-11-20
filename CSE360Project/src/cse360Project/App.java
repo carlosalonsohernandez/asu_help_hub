@@ -770,6 +770,46 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
                 }
             });
         });
+        
+        /***************************************************************
+         * 
+         * FILTERING ARTICLES BY LEVEL
+         *  
+         ***************************************************************/
+     // Filter articles by difficulty level button
+        Button filterByLevelButton = new Button("Filter by Difficulty Level");
+        filterByLevelButton.setOnAction(e -> {
+            // Replace this with a method to get available levels (e.g., beginner, intermediate, advanced)
+            List<String> availableLevels = helpRepo.getAvailableLevels();
+            System.out.println("Available Difficulty Levels: " + availableLevels);
+
+            // Create a custom dialog for level selection
+            Dialog<ButtonType> levelDialog = new Dialog<>();
+            levelDialog.setTitle("Select Difficulty Levels");
+            levelDialog.setHeaderText("Choose difficulty levels to filter articles");
+
+            // Create a ListView for level selection
+            ListView<String> listView = new ListView<>();
+            listView.getItems().addAll(availableLevels);
+            listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+            // Set dialog's content to the ListView
+            DialogPane dialogPane = levelDialog.getDialogPane();
+            dialogPane.setContent(listView);
+            dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+            // Show the dialog and check the result
+            levelDialog.showAndWait().ifPresent(result -> {
+                if (result == ButtonType.OK) {
+                    // Retrieve selected levels from ListView
+                    List<String> selectedLevels = new ArrayList<>(listView.getSelectionModel().getSelectedItems());
+                    System.out.println("Selected Difficulty Levels: " + selectedLevels);
+
+                    // Load articles filtered by the selected levels
+                    helpService.loadArticlesIntoTable(tableView, null, selectedLevels);
+                }
+            });
+        });
 
         /***************************************************************
          * 
@@ -822,6 +862,7 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         gridPane.add(backupButton, 1, 4); 
         gridPane.add(restoreButton, 2, 4); 
         gridPane.add(filterByGroupButton, 0, 5); 
+        gridPane.add(filterByLevelButton, 1, 5);
         gridPane.add(backButton, 0, 6); 
         gridPane.add(logoutButton, 1, 6); 
 

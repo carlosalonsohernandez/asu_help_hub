@@ -196,87 +196,79 @@ public class HelpArticleRepository {
 	    }
 	}
 	
-
 	public List<HelpArticle> getArticlesByGroups(List<String> groups) {
+		return getArticlesByGroupsAndLevels(groups, null);
+	}
+	
+	public List<HelpArticle> getArticlesByLevel(List<String> levels) {
+		return getArticlesByGroupsAndLevels(null, levels);
+	}
+
+	public List<HelpArticle> getArticlesByGroupsAndLevels(List<String> groups, List<String> levels) {
 	    List<HelpArticle> articles = new ArrayList<>();
 	    
-	    if (groups == null || groups.isEmpty()) {
-	        return articles; // Return empty if no groups provided
+	    if ((groups == null || groups.isEmpty()) && (levels == null || levels.isEmpty())) {
+	        return articles; // Return empty if no filters are provided
 	    }
 
-	    // Prepare the SQL query using LIKE for each group
+	    // Prepare the SQL query
 	    StringBuilder queryBuilder = new StringBuilder("SELECT * FROM help_articles WHERE ");
-	    for (int i = 0; i < groups.size(); i++) {
-	        queryBuilder.append("group_identifiers LIKE ?");
-	        if (i < groups.size() - 1) {
-	            queryBuilder.append(" OR "); // Use OR to match any group
+	    
+	    boolean hasGroups = (groups != null && !groups.isEmpty());
+	    boolean hasLevels = (levels != null && !levels.isEmpty());
+
+	    if (hasGroups) {
+	        for (int i = 0; i < groups.size(); i++) {
+	            queryBuilder.append("group_identifiers LIKE ?");
+	            if (i < groups.size() - 1) {
+	                queryBuilder.append(" OR "); // Use OR to match any group
+	            }
 	        }
+	    }
+
+	    if (hasGroups && hasLevels) {
+	        queryBuilder.append(" AND "); // Combine groups and levels with AND
+	    }
+
+	    if (hasLevels) {
+	        queryBuilder.append("level IN (");
+	        for (int i = 0; i < levels.size(); i++) {
+	            queryBuilder.append("?");
+	            if (i < levels.size() - 1) {
+	                queryBuilder.append(", "); // Add commas between placeholders for levels
+	            }
+	        }
+	        queryBuilder.append(")");
 	    }
 
 	    String query = queryBuilder.toString();
 
 	    try (PreparedStatement stmt = connection.prepareStatement(query)) {
-	        // Set the parameters for the prepared statement
-	        for (int i = 0; i < groups.size(); i++) {
-	            stmt.setString(i + 1, "%" + groups.get(i) + "%"); // Wildcard for partial match
+	        int paramIndex = 1;
+
+	        // Set params for groups
+	        if (hasGroups) {
+	            for (String group : groups) {
+	                stmt.setString(paramIndex++, "%" + group + "%"); // Wildcard - partial match 
+	            }
+	        }
+
+	        // Set the parameters for levels
+	        if (hasLevels) {
+	            for (String level : levels) {
+	                stmt.setString(paramIndex++, level);
+	            }
 	        }
 
 	        try (ResultSet rs = stmt.executeQuery()) {
-	            while (rs.next()) {
-	                // Convert comma-separated strings to appropriate collections
-	                Set<String> keywords = new HashSet<>();
-	                String keywordString = rs.getString("keywords");
-	                if (keywordString != null && !keywordString.trim().isEmpty()) {
-	                    String[] keywordArray = keywordString.split(",");
-	                    for (String keyword : keywordArray) {
-	                        keywords.add(keyword.trim());
-	                    }
-	                }
-
-	                List<String> links = new ArrayList<>();
-	                String linkString = rs.getString("links");
-	                if (linkString != null && !linkString.trim().isEmpty()) {
-	                    String[] linkArray = linkString.split(",");
-	                    for (String link : linkArray) {
-	                        links.add(link.trim());
-	                    }
-	                }
-
-	                Set<String> groupIdentifiers = new HashSet<>();
-	                String groupIdentifierString = rs.getString("group_identifiers");
-	                if (groupIdentifierString != null && !groupIdentifierString.trim().isEmpty()) {
-	                    String[] groupArray = groupIdentifierString.split(",");
-	                    for (String group : groupArray) {
-	                        groupIdentifiers.add(group.trim());
-	                    }
-	                }
-
-	                // Instantiate HelpArticle using the constructor with collections
-	                HelpArticle article = new HelpArticle(
-	                    rs.getLong("id"),
-	                    rs.getString("header"),
-	                    rs.getString("level"),
-	                    rs.getString("title"),
-	                    rs.getString("short_description"),
-	                    keywords,
-	                    rs.getString("body"),
-	                    links,
-	                    groupIdentifiers,
-	                    rs.getBoolean("is_sensitive"),
-	                    rs.getString("safe_title"),
-	                    rs.getString("safe_description")
-	                );
-
-	                articles.add(article);
-	            }
+	            articles = getArticlesFromResultSet(rs);
 	        }
 	    } catch (SQLException e) {
 	        e.printStackTrace();
 	    }
-
+	    
 	    return articles;
 	}
-	
 
     public List<String> getAvailableGroups() {
         Set<String> groupSet = new HashSet<>(); // using set to avoid duplicates at first, convert to List at the end 
@@ -316,5 +308,104 @@ public class HelpArticleRepository {
 	    }
 	    return false;
 	}
+	
+	public List<HelpArticle> getArticlesByLevels(List<String> levels) {
+	    // SQL query to filter articles based on levels
+		List<HelpArticle> articles = new ArrayList<>();
+	    String query = "SELECT * FROM help_articles WHERE level IN (" +
+	                   levels.stream().map(l -> "'" + l + "'").collect(Collectors.joining(", ")) + ")";
+	    // Execute the query and return the result
+	    try(PreparedStatement stmt = connection.prepareStatement(query);
+	    	ResultSet rs = stmt.executeQuery()) {
+	    	{
+	    	
+	    	articles = getArticlesFromResultSet(rs);
+
+	    	}
+	    	
+	    } catch (SQLException e) {
+	    	e.printStackTrace();
+	    }
+	    return articles;
+	}
+	
+	// Get all available levels in the DB
+	public List<String> getAvailableLevels() {
+	    List<String> levels = new ArrayList<>();
+	    String query = "SELECT DISTINCT level FROM help_articles";
+
+	    try (PreparedStatement stmt = connection.prepareStatement(query);
+	         ResultSet rs = stmt.executeQuery()) {
+
+	        // Iterate through result set and add each level to the list
+	        while (rs.next()) {
+	            levels.add(rs.getString("level"));
+	        }
+
+	    } catch (SQLException e) {
+	        e.printStackTrace(); // Log the exception for debugging
+	    }
+
+	    return levels;
+	}
+	
+	private List<HelpArticle> getArticlesFromResultSet(ResultSet rs) {
+		Set<HelpArticle> articles = new HashSet<>();
+		
+		try {
+			while(rs.next()) {
+				// Convert comma-separated strings to appropriate collections
+				Set<String> keywords = new HashSet<>();
+				String keywordString = rs.getString("keywords");
+				if (keywordString != null && !keywordString.trim().isEmpty()) {
+					String[] keywordArray = keywordString.split(",");
+					for (String keyword : keywordArray) {
+						keywords.add(keyword.trim());
+					}
+				}
+
+				List<String> links = new ArrayList<>();
+				String linkString = rs.getString("links");
+				if (linkString != null && !linkString.trim().isEmpty()) {
+					String[] linkArray = linkString.split(",");
+					for (String link : linkArray) {
+						links.add(link.trim());
+					}
+				}
+
+				Set<String> groupIdentifiers = new HashSet<>();
+				String groupIdentifierString = rs.getString("group_identifiers");
+				if (groupIdentifierString != null && !groupIdentifierString.trim().isEmpty()) {
+					String[] groupArray = groupIdentifierString.split(",");
+					for (String group : groupArray) {
+						groupIdentifiers.add(group.trim());
+					}
+				}
+				// iterate through and add each res as a help article
+				HelpArticle article = new HelpArticle(
+				rs.getLong("id"),
+				rs.getString("header"),
+				rs.getString("level"),
+				rs.getString("title"),
+				rs.getString("short_description"),
+				keywords,
+				rs.getString("body"),
+				links,
+				groupIdentifiers,
+				rs.getBoolean("is_sensitive"),
+				rs.getString("safe_title"),
+				rs.getString("safe_description"));
+				
+				articles.add(article);
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return new ArrayList<>(articles);
+	}
+	
+	
+	
 
 }
