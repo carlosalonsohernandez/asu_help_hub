@@ -4,6 +4,7 @@ import javafx.application.Application;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -19,6 +20,7 @@ import javafx.scene.control.ScrollPane;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.VBox;
@@ -31,15 +33,19 @@ import java.io.UnsupportedEncodingException;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import cse360Project.model.HelpArticle;
 import cse360Project.model.Role;
 import cse360Project.repository.HelpArticleRepository;
+import cse360Project.repository.HelpMessageRepository;
 import cse360Project.repository.InvitationRepository;
 import cse360Project.repository.RoleRepository;
 import cse360Project.repository.UserRepository;
 import cse360Project.service.HelpArticleService;
+import cse360Project.service.HelpMessageService;
 import cse360Project.service.InvitationService;
 import cse360Project.service.UserService;
 import javafx.scene.layout.GridPane;
@@ -69,7 +75,11 @@ public class App extends Application {
 	private static RoleRepository roleRepo = null;
 	private static InvitationRepository inviteRepo = null;
 	private static HelpArticleRepository helpRepo = null;
+	private static HelpMessageRepository helpMessageRepo = null;
+	
+	
 	private static HelpArticleService helpService = null;
+	private static HelpMessageService helpMessageService = null;
 	private static UserService userService = null;
 	private static InvitationService inviteService = null;
     // Entry point for JavaFX application
@@ -84,12 +94,14 @@ public class App extends Application {
         roleRepo = new RoleRepository(databaseHelper.getConnection());
         inviteRepo = new InvitationRepository(databaseHelper.getConnection());
         helpRepo = new HelpArticleRepository(databaseHelper.getConnection());
+        helpMessageRepo = new HelpMessageRepository(databaseHelper.getConnection());
         
         
         // establish services
         userService = new UserService(userRepo, roleRepo);
         inviteService = new InvitationService(inviteRepo, roleRepo);
         helpService = new HelpArticleService(helpRepo);
+        helpMessageService = new HelpMessageService(helpMessageRepo);
         
         databaseHelper.displayUsersByUser();
         System.out.println(s);
@@ -421,7 +433,7 @@ public class App extends Application {
          
          manageHelpArticlesButton.setOnAction(e -> {
             	try {
-    				showManageHelpArticlesPage(stage);
+    				showAdminManageHelpArticlesPage(stage);
     			} catch (Exception e1) {
     				// TODO Auto-generated catch block
     				e1.printStackTrace();
@@ -534,7 +546,7 @@ public class App extends Application {
      * but it may be worth looking into.
      *  
      ***************************************************************/
-    public void showManageHelpArticlesPage(Stage stage) {
+    public void showAdminManageHelpArticlesPage(Stage stage) {
         stage.setTitle("Manage Help Articles");
 
         // Create GridPane layout
@@ -589,7 +601,7 @@ public class App extends Application {
         
         Button refreshArticleButton = new Button("Refresh Articles");
         refreshArticleButton.setOnAction(e -> {
-        	showManageHelpArticlesPage(stage);
+        	showAdminManageHelpArticlesPage(stage);
 
         });
 
@@ -615,7 +627,7 @@ public class App extends Application {
                 Optional<ButtonType> result = confirmationAlert.showAndWait();
                 if (result.isPresent() && result.get() == yesButton) {
                     helpService.deleteArticle(selectedArticle.get(0)); 
-                    showManageHelpArticlesPage(stage); // Refresh page
+                    showAdminManageHelpArticlesPage(stage); // Refresh page
                 }
             }
         });
@@ -679,7 +691,7 @@ public class App extends Application {
                 }
             });
 
-            showManageHelpArticlesPage(stage);
+            showAdminManageHelpArticlesPage(stage);
         });
 
 
@@ -730,7 +742,349 @@ public class App extends Application {
             });
             
             // Refresh page if necessary
-            showManageHelpArticlesPage(stage);
+            showAdminManageHelpArticlesPage(stage);
+        });
+
+        /***************************************************************
+         * 
+         * FILTERING ARTICLES BY GROUP
+         *  
+         ***************************************************************/
+        // group articles button 
+        Button filterByGroupButton = new Button("Filter by Group");
+        filterByGroupButton.setOnAction(e -> {
+            List<String> availableGroups = helpRepo.getAvailableGroups();
+            System.out.println("Available Groups: " + availableGroups);
+
+            // create a custom dialog for group selection
+            Dialog<ButtonType> groupDialog = new Dialog<>();
+            groupDialog.setTitle("Select Article Groups");
+            groupDialog.setHeaderText("Choose groups to filter articles");
+
+            // Create a ListView for group selection
+            ListView<String> listView = new ListView<>();
+            listView.getItems().addAll(availableGroups);
+            listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+            // set dialog's content to the ListView
+            DialogPane dialogPane = groupDialog.getDialogPane();
+            dialogPane.setContent(listView);
+            dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+            // Show the dialog and check the result
+            groupDialog.showAndWait().ifPresent(result -> {
+                if (result == ButtonType.OK) {
+                    // Retrieve selected groups from ListView
+                    List<String> selectedGroups = new ArrayList<>(listView.getSelectionModel().getSelectedItems());
+                    System.out.println("Selected Groups: " + selectedGroups);
+
+helpService.loadArticlesIntoTable(tableView, selectedGroups);
+                }
+            });
+        });
+        
+        /***************************************************************
+         * 
+         * FILTERING ARTICLES BY LEVEL
+         *  
+         ***************************************************************/
+     // Filter articles by difficulty level button
+        Button filterByLevelButton = new Button("Filter by Difficulty Level");
+        filterByLevelButton.setOnAction(e -> {
+            // Replace this with a method to get available levels (e.g., beginner, intermediate, advanced)
+            List<String> availableLevels = helpRepo.getAvailableLevels();
+            System.out.println("Available Difficulty Levels: " + availableLevels);
+
+            // Create a custom dialog for level selection
+            Dialog<ButtonType> levelDialog = new Dialog<>();
+            levelDialog.setTitle("Select Difficulty Levels");
+            levelDialog.setHeaderText("Choose difficulty levels to filter articles");
+
+            // Create a ListView for level selection
+            ListView<String> listView = new ListView<>();
+            listView.getItems().addAll(availableLevels);
+            listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+            // Set dialog's content to the ListView
+            DialogPane dialogPane = levelDialog.getDialogPane();
+            dialogPane.setContent(listView);
+            dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+            // Show the dialog and check the result
+            levelDialog.showAndWait().ifPresent(result -> {
+                if (result == ButtonType.OK) {
+                    // Retrieve selected levels from ListView
+                    List<String> selectedLevels = new ArrayList<>(listView.getSelectionModel().getSelectedItems());
+                    System.out.println("Selected Difficulty Levels: " + selectedLevels);
+
+                    // Load articles filtered by the selected levels
+                    helpService.loadArticlesIntoTable(tableView, null, selectedLevels);
+                }
+            });
+        });
+
+        /***************************************************************
+         * 
+         * SEARCHING ARTICLES BY KEYWORDS 
+         *  
+         ***************************************************************/
+        TextField searchField = new TextField();
+        searchField.setPromptText("Search articles by keyword...");
+        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+            helpService.searchArticlesByKeyword(newValue, tableView);
+        });
+
+        // Logout button
+        Button logoutButton = new Button("Logout");
+        logoutButton.setOnAction(e -> {
+            Session.getInstance().clear();
+            try {
+                start(stage); // Redirect to login page
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+        
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> {
+        	try {
+				if(roleRepo.getRolesForUser(Session.getInstance().getCurrentUser().getId())
+						.stream()
+						.map(Role::getRoleName)
+						.anyMatch(p -> p.equals("admin"))) {
+					showAdminHomePage(stage);
+				} else {
+					showInstructorHomePage(stage);
+				}
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+        });
+        
+        
+        // Add gridPane elements
+        gridPane.add(titleLabel, 0, 0, 3, 1); 
+        gridPane.add(searchField, 0, 1, 3, 1); 
+        gridPane.add(tableView, 0, 2, 3, 1); 
+        gridPane.add(createArticleButton, 0, 3); 
+        gridPane.add(updateArticleButton, 1, 3); 
+        gridPane.add(refreshArticleButton, 2, 3); 
+        gridPane.add(deleteArticleButton, 0, 4); 
+        gridPane.add(backupButton, 1, 4); 
+        gridPane.add(restoreButton, 2, 4); 
+        gridPane.add(filterByGroupButton, 0, 5); 
+        gridPane.add(filterByLevelButton, 1, 5);
+        gridPane.add(backButton, 0, 6); 
+        gridPane.add(logoutButton, 1, 6); 
+
+        // Set the Scene and show the Stage
+        Scene scene = new Scene(gridPane, 800, 600);
+        stage.setScene(scene);
+    }
+    
+  
+    
+    public void showNonAdminManageHelpArticlesPage(Stage stage) {
+        stage.setTitle("Manage Help Articles");
+
+        // Create GridPane layout
+        GridPane gridPane = new GridPane();
+        gridPane.setPadding(new Insets(10));
+        gridPane.setHgap(10);
+        gridPane.setVgap(10);
+
+        // Label for page title
+        Label titleLabel = new Label("Manage Help Articles");
+
+        // Table to display help articles
+        TableView<List<String>> tableView = new TableView<>(); 
+        TableColumn<List<String>, String> sequenceCol = new TableColumn<>("Header");
+        sequenceCol.setCellValueFactory(cellData -> {
+            int index = tableView.getItems().indexOf(cellData.getValue()) + 1;
+            return new SimpleStringProperty(String.valueOf(index));
+        });
+        TableColumn<List<String>, String> titleCol = new TableColumn<>("Title");
+        titleCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(1)));
+        TableColumn<List<String>, String> authorsCol = new TableColumn<>("Short Description");
+        authorsCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(4)));
+        TableColumn<List<String>, String> abstractCol = new TableColumn<>("Level");
+        abstractCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(2)));
+
+        tableView.getColumns().addAll(sequenceCol, titleCol, authorsCol, abstractCol);
+        helpService.loadArticlesIntoTable(tableView); // Load article data into the table
+
+        /***************************************************************
+         * 
+         * CREATING ARTICLES 
+         *  
+         ***************************************************************/
+        Button createArticleButton = new Button("Create Article");
+        createArticleButton.setOnAction(e -> {
+            // Code to open a form for creating a new article
+            helpService.createNewArticleForm();
+        });
+
+        /***************************************************************
+         * 
+         * UPDATING ARTICLES
+         *  
+         ***************************************************************/
+        // Update Article button
+        Button updateArticleButton = new Button("Update Article");
+        updateArticleButton.setOnAction(e -> {
+            List<String> selectedArticle = tableView.getSelectionModel().getSelectedItem();
+            if (selectedArticle != null) {
+                // Open form with pre-filled data for the selected article
+                helpService.updateArticleForm(selectedArticle.get(0));
+            }
+        });
+
+        
+        Button refreshArticleButton = new Button("Refresh Articles");
+        refreshArticleButton.setOnAction(e -> {
+        	showAdminManageHelpArticlesPage(stage);
+
+        });
+
+        /***************************************************************
+         * 
+         * DELETING ARTICLES
+         *  
+         ***************************************************************/
+        Button deleteArticleButton = new Button("Delete Article");
+        deleteArticleButton.setOnAction(e -> {
+            List<String> selectedArticle = tableView.getSelectionModel().getSelectedItem();
+            if (selectedArticle != null) {
+                // Create a confirmation dialog
+                Alert confirmationAlert = new Alert(Alert.AlertType.CONFIRMATION);
+                confirmationAlert.setTitle("Confirm Deletion");
+                confirmationAlert.setHeaderText(null);
+                confirmationAlert.setContentText("Are you sure you want to delete this article?");
+
+                ButtonType yesButton = new ButtonType("Yes");
+                ButtonType noButton = new ButtonType("No");
+                confirmationAlert.getButtonTypes().setAll(yesButton, noButton);
+
+                Optional<ButtonType> result = confirmationAlert.showAndWait();
+                if (result.isPresent() && result.get() == yesButton) {
+                    helpService.deleteArticle(selectedArticle.get(0)); 
+                    showAdminManageHelpArticlesPage(stage); // Refresh page
+                }
+            }
+        });
+
+
+        /***************************************************************
+         * 
+         * BACKING UP ARTICLES 
+         *  
+         ***************************************************************/
+        Button backupButton = new Button("Backup");
+        backupButton.setOnAction(e -> {
+            List<String> availableGroups = helpRepo.getAvailableGroups();
+
+            // Create a custom dialog for group selection
+            Dialog<ButtonType> groupDialog = new Dialog<>();
+            groupDialog.setTitle("Select Article Groups");
+            groupDialog.setHeaderText("Choose groups to backup");
+
+            // Create a ListView for group selection
+            ListView<String> listView = new ListView<>();
+            listView.getItems().addAll(availableGroups);
+            listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+            // Set the dialog's content to the ListView
+            DialogPane dialogPane = groupDialog.getDialogPane();
+            dialogPane.setContent(listView);
+            dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+            // Show the dialog and check the result
+            groupDialog.showAndWait().ifPresent(result -> {
+                if (result == ButtonType.OK) {
+                    // Retrieve selected groups from ListView
+                    List<String> selectedGroups = new ArrayList<>(listView.getSelectionModel().getSelectedItems());
+                    
+                    if (!selectedGroups.isEmpty()) {
+                        // Prompt the user for a file name
+                        TextInputDialog backupDialog = new TextInputDialog();
+                        backupDialog.setTitle("Backup Articles");
+                        backupDialog.setHeaderText("Specify Backup File Name");
+                        backupDialog.setContentText("Enter the file name (with .backup extension):");
+
+                        backupDialog.showAndWait().ifPresent(fileName -> {
+                            if (fileName != null && !fileName.trim().isEmpty()) {
+                                // Call the repository's backup method with selected groups
+                                List<HelpArticle> articlesToBackup = helpRepo.getArticlesByGroups(selectedGroups);
+                                try {
+                                    helpRepo.backupArticles(fileName.trim(), articlesToBackup);
+                                    helpService.showInfo("Backup successful to " + fileName);
+                                } catch (IOException e1) {
+                                    e1.printStackTrace();
+                                    helpService.showError("Error during backup: " + e1.getMessage());
+                                }
+                            } else {
+                                helpService.showError("File name cannot be empty.");
+                            }
+                        });
+                    } else {
+                        helpService.showError("No groups selected.");
+                    }
+                }
+            });
+
+            showAdminManageHelpArticlesPage(stage);
+        });
+
+
+        
+        /***************************************************************
+         * 
+         * RESTORING ARTICLES 
+         *  
+         ***************************************************************/
+
+        Button restoreButton = new Button("Restore");
+        restoreButton.setOnAction(e -> {
+            Dialog<ButtonType> dialog = new Dialog<>();
+            dialog.setTitle("Restore Articles");
+            dialog.setHeaderText("Specify Restore File Name");
+
+            // Create VBox to hold TextField and CheckBox
+            VBox restoreDialogPane = new VBox();
+            TextField fileNameField = new TextField();
+            fileNameField.setPromptText("Enter the backup file name (with .backup extension)");
+
+            CheckBox mergeCheckBox = new CheckBox("Merge?");
+            mergeCheckBox.setSelected(false); // Default to not merging
+
+            restoreDialogPane.getChildren().addAll(new Label("Backup file name:"), fileNameField, mergeCheckBox);
+            dialog.getDialogPane().setContent(restoreDialogPane);
+
+            // Add OK and Cancel buttons to the dialog
+            dialog.getDialogPane().getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+            // Show the dialog and process the result
+            dialog.showAndWait().ifPresent(result -> {
+                if (result == ButtonType.OK) {
+                    String fileName = fileNameField.getText();
+                    boolean merge = mergeCheckBox.isSelected();
+
+                    if (fileName != null && !fileName.trim().isEmpty()) {
+                        try {
+                            helpRepo.restoreArticles(fileName.trim(), !merge);
+                            helpService.showInfo("Restore successful from " + fileName);
+                        } catch (IOException | SQLException ex) {
+                            helpService.showError("Restore failed: " + ex.getMessage());
+                        }
+                    } else {
+                        helpService.showError("File name cannot be empty.");
+                    }
+                }
+            });
+            
+            // Refresh page if necessary
+            showAdminManageHelpArticlesPage(stage);
         });
 
         /***************************************************************
@@ -885,7 +1239,7 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         Button manageHelpArticlesButton = new Button("Manage Help Articles");
         manageHelpArticlesButton.setOnAction(e -> {
         	try {
-				showManageHelpArticlesPage(stage);
+				showAdminManageHelpArticlesPage(stage);
 			} catch (Exception e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
@@ -1050,46 +1404,100 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
     }
     
 
-	public void showStudentHomePage(Stage stage) {
-        stage.setTitle("Home");
-        
-        // GridPane layout with padding
-        GridPane gridPane = new GridPane();
-        gridPane.setPadding(new Insets(10)); // Adds padding to avoid elements near edges
-        gridPane.setHgap(10); // Horizontal spacing between elements
-        gridPane.setVgap(10); // Vertical spacing between elements
-        
-        Label helloLabel = new Label("Welcome and hello " + Session.getInstance().getCurrentUser().getFirstName() + " " + Session.getInstance().getCurrentUser().getLastName() + "!");
 
-        // logout 
-        Button logoutButton = new Button("Logout");
-        
-        logoutButton.setOnAction(e -> {
-        	Session.getInstance().clear();
-        	try {
-				start(stage);
-			} catch (UnsupportedEncodingException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			} catch (Exception e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
+    private void showStudentHomePage(Stage stage) {
+        // Create a new VBox or container for buttons
+        VBox buttonContainer = new VBox(10); // Vertical box with 10px spacing
 
+
+     // Create "Send Generic Message" button
+        Button sendGenericMessageButton = new Button("Send Generic Message");
+        sendGenericMessageButton.setOnAction(e -> {
+            // Display a popup to collect the generic message
+            TextInputDialog dialog = new TextInputDialog();
+            dialog.setTitle("Generic Message");
+            dialog.setHeaderText("Send a Generic Message to the Help System");
+            dialog.setContentText("Please describe your confusion:");
+            
+            Optional<String> result = dialog.showAndWait();
+            result.ifPresent(message -> {
+                // Send the generic message (Replace with actual logic to send it)
+                System.out.println("Generic Message Sent: " + message);
+                // implement when schema done: helpMessageService.sendMessage()
+            });
         });
 
-        // Add elements to the GridPane
+        // Create "Send Specific Message" button
+        Button sendSpecificMessageButton = new Button("Send Specific Message");
+        sendSpecificMessageButton.setOnAction(e -> {
+            // Display a popup to collect details of the specific message
+            Dialog<List<String>> dialog = new Dialog<>();
+            dialog.setTitle("Specific Message");
+            dialog.setHeaderText("Send a Specific Message to the Help System");
 
-        gridPane.add(helloLabel, 0, 1);
-        gridPane.add(logoutButton, 1, 2);
-        
-        // use scroll pane for potentially long list of users
-        ScrollPane scrollPane = new ScrollPane();
-        scrollPane.setContent(gridPane);
+            // Create labels and fields for the form
+            Label searchLabel = new Label("Search Terms:");
+            TextField searchField = new TextField();
+            Label descriptionLabel = new Label("Description of Need:");
+            TextArea descriptionField = new TextArea();
 
-        // Set the Scene and show the Stage
-        Scene scene = new Scene(scrollPane, 400, 300); // Width and Height
+            // Layout the fields in a grid
+            GridPane gridPane = new GridPane();
+            gridPane.setHgap(10);
+            gridPane.setVgap(10);
+            gridPane.add(searchLabel, 0, 0);
+            gridPane.add(searchField, 1, 0);
+            gridPane.add(descriptionLabel, 0, 1);
+            gridPane.add(descriptionField, 1, 1);
+
+            dialog.getDialogPane().setContent(gridPane);
+
+            // Add OK and Cancel buttons
+            ButtonType sendButtonType = new ButtonType("Send", ButtonBar.ButtonData.OK_DONE);
+            dialog.getDialogPane().getButtonTypes().addAll(sendButtonType, ButtonType.CANCEL);
+
+            // Handle the result of the dialog
+            dialog.setResultConverter(dialogButton -> {
+                if (dialogButton == sendButtonType) {
+                    return List.of(searchField.getText(), descriptionField.getText());
+                }
+                return null;
+            });
+
+            Optional<List<String>> result = dialog.showAndWait();
+            result.ifPresent(data -> {
+                String searchTerms = data.get(0);
+                String description = data.get(1);
+                // Send the specific message (Replace with actual logic to send it)
+                System.out.println("Specific Message Sent: Search Terms - " + searchTerms + ", Description - " + description);
+                // TODO: Save these details to the help system or database
+            });
+        });
+
+        Button showArticlesButton = new Button("Show Articles");
+        showArticlesButton.setOnAction(e -> {
+            showNonAdminManageHelpArticlesPage(stage);
+        });
+
+        Button logoutButton = new Button("Logout");
+        logoutButton.setOnAction(e -> {
+            // Logic for logging out the user
+            System.out.println("User logged out!");
+            showRegistrationPage(stage);
+        });
+
+        buttonContainer.getChildren().addAll(
+            sendGenericMessageButton,
+            sendSpecificMessageButton,
+            showArticlesButton,
+            logoutButton
+        );
+
+        buttonContainer.setAlignment(Pos.CENTER);
+        Scene scene = new Scene(buttonContainer, 400, 400); 
         stage.setScene(scene);
+        stage.setTitle("Student Home Page");
+        stage.show();
     }
     
 

@@ -18,6 +18,7 @@ import javafx.stage.Stage;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import cse360Project.model.HelpArticle;
@@ -271,6 +272,10 @@ public class HelpArticleService {
         Scene scene = new Scene(gridPane, 400, 200);
         manageGroupsStage.setScene(scene);
         manageGroupsStage.show();
+    }
+    
+    public List<Map<String, Object>> getArticlesForNonAdmin() {
+        return articleRepo.fetchArticlesForNonAdmin();
     }
 
     public void updateArticleForm(String articleHeader) {

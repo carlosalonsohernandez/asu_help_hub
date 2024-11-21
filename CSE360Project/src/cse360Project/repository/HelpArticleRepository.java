@@ -18,8 +18,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.io.File;
@@ -329,6 +331,30 @@ public class HelpArticleRepository {
 	    return articles;
 	}
 	
+	
+	public List<Map<String, Object>> fetchArticlesForNonAdmin() {
+	    String query = "SELECT id, title, keywords AS authors, short_description AS abstract FROM help_articles";
+	    List<Map<String, Object>> articles = new ArrayList<>();
+	    
+	    try (PreparedStatement stmt = connection.prepareStatement(query);
+	         ResultSet rs = stmt.executeQuery()) {
+	        
+	        int sequenceNumber = 1;
+	        while (rs.next()) {
+	            Map<String, Object> article = new HashMap<>();
+	            article.put("sequence", sequenceNumber++);
+	            article.put("title", rs.getString("title"));
+	            article.put("authors", rs.getString("authors"));
+	            article.put("abstract", rs.getString("abstract"));
+	            articles.add(article);
+	        }
+	    } catch (SQLException e) {
+	        e.printStackTrace();
+	    }
+	    
+	    return articles;
+	}
+	
 	// Get all available levels in the DB
 	public List<String> getAvailableLevels() {
 	    List<String> levels = new ArrayList<>();
@@ -349,7 +375,7 @@ public class HelpArticleRepository {
 	    return levels;
 	}
 	
-	private List<HelpArticle> getArticlesFromResultSet(ResultSet rs) {
+	List<HelpArticle> getArticlesFromResultSet(ResultSet rs) {
 		Set<HelpArticle> articles = new HashSet<>();
 		
 		try {
