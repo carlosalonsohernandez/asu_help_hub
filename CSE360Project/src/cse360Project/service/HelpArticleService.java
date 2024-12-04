@@ -185,7 +185,7 @@ public class HelpArticleService {
         gridPane.add(shortDescriptionField, 1, 2);
         gridPane.add(new Label("Body:"), 0, 3);
         gridPane.add(bodyField, 1, 3);
-        gridPane.add(new Label("Keywords (comma-separated):"), 0, 4);
+        gridPane.add(new Label("Authors (comma-separated):"), 0, 4);
         gridPane.add(keywordsField, 1, 4);
         gridPane.add(new Label("Links (comma-separated):"), 0, 5);
         gridPane.add(linksField, 1, 5);
@@ -375,7 +375,7 @@ public class HelpArticleService {
         gridPane.add(titleField, 1, 2);
         gridPane.add(new Label("Short Description:"), 0, 3);
         gridPane.add(shortDescriptionField, 1, 3);
-        gridPane.add(new Label("Keywords (comma-separated):"), 0, 4);
+        gridPane.add(new Label("Authors (comma-separated):"), 0, 4);
         gridPane.add(keywordsField, 1, 4);
         gridPane.add(new Label("Links (comma-separated):"), 0, 5);
         gridPane.add(linksField, 1, 5);
