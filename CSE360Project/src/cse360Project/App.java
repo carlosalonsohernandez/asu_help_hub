@@ -577,7 +577,7 @@ public class App extends Application {
         headerCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(0)));
         TableColumn<List<String>, String> titleCol = new TableColumn<>("Title");
         titleCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(1)));
-        TableColumn<List<String>, String> descriptionCol = new TableColumn<>("Short Description");
+        TableColumn<List<String>, String> descriptionCol = new TableColumn<>("Abstract");
         descriptionCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(2)));
         TableColumn<List<String>, String> levelCol = new TableColumn<>("Level");
         levelCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(3)));

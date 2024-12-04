@@ -360,7 +360,6 @@ public class HelpArticleService {
         TextField levelField = new TextField(existingArticle.getLevel());
         TextField titleField = new TextField(existingArticle.getTitle());
         TextField shortDescriptionField = new TextField(existingArticle.getShortDescription());
-        TextArea bodyField = new TextArea(existingArticle.getBody());
         TextField keywordsField = new TextField(String.join(",", existingArticle.getKeywords()));
         TextField linksField = new TextField(String.join(",", existingArticle.getLinks()));
         TextField groupIdentifiersField = new TextField(String.join(",", existingArticle.getGroupIdentifiers()));
@@ -376,15 +375,13 @@ public class HelpArticleService {
         gridPane.add(titleField, 1, 2);
         gridPane.add(new Label("Short Description:"), 0, 3);
         gridPane.add(shortDescriptionField, 1, 3);
-        gridPane.add(new Label("Body:"), 0, 4);
-        gridPane.add(bodyField, 1, 4);
-        gridPane.add(new Label("Keywords (comma-separated):"), 0, 5);
-        gridPane.add(keywordsField, 1, 5);
-        gridPane.add(new Label("Links (comma-separated):"), 0, 6);
-        gridPane.add(linksField, 1, 6);
-        gridPane.add(new Label("Group Identifiers (comma-separated):"), 0, 7);
-        gridPane.add(groupIdentifiersField, 1, 7);
-        gridPane.add(sensitiveCheckBox, 1, 8);
+        gridPane.add(new Label("Keywords (comma-separated):"), 0, 4);
+        gridPane.add(keywordsField, 1, 4);
+        gridPane.add(new Label("Links (comma-separated):"), 0, 5);
+        gridPane.add(linksField, 1, 5);
+        gridPane.add(new Label("Group Identifiers (comma-separated):"), 0, 6);
+        gridPane.add(groupIdentifiersField, 1, 6);
+        gridPane.add(sensitiveCheckBox, 1, 7);
 
         // Create button to save the updated article
         Button updateButton = new Button("Update Article");
@@ -397,7 +394,7 @@ public class HelpArticleService {
                         titleField.getText(),
                         shortDescriptionField.getText(),
                         Set.of(keywordsField.getText().split(",")),
-                        bodyField.getText(),
+                        existingArticle.getBody(), // Keep the original body
                         List.of(linksField.getText().split(",")),
                         Set.of(groupIdentifiersField.getText().split(",")),
                         sensitiveCheckBox.isSelected(),
@@ -412,8 +409,8 @@ public class HelpArticleService {
             }
         });
 
-        gridPane.add(updateButton, 1, 9);
-        Scene scene = new Scene(gridPane, 400, 500);
+        gridPane.add(updateButton, 1, 8);
+        Scene scene = new Scene(gridPane, 400, 450);
         updateArticleStage.setScene(scene);
         updateArticleStage.show();
     }
