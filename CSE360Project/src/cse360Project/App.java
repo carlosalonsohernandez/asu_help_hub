@@ -1232,9 +1232,10 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         searchField.setPromptText("Search articles by keyword...");
         searchField.textProperty().addListener((observable, oldValue, newValue) -> {
             helpService.searchArticlesByKeyword(newValue, tableView);
+            Session.getInstance().addSearchReq(newValue);
             refreshLabels(activeGroupsLabel, levelInfoLabel, tableView);
         });
-
+        
         // Logout button
         Button logoutButton = new Button("Logout");
         logoutButton.setOnAction(e -> {

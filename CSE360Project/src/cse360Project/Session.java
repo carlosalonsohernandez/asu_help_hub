@@ -1,5 +1,7 @@
 package cse360Project;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import cse360Project.model.User;
@@ -26,6 +28,7 @@ public class Session {
     private boolean OTPUsed;
     private List<String> invitedRoles;
     private List<String > activeGroups;
+    private List<String> searchRequests = new ArrayList<>(Arrays.asList("H", "H2"));
 
     /**********************************************************************************************
      * Constructors
@@ -90,6 +93,21 @@ public class Session {
 	public void setActiveGroups(List<String> activeGroups)
 	{
 		this.activeGroups = activeGroups;
+	}
+	
+	public List<String> getSearchReqs() {
+		return this.searchRequests;
+	}
+	
+	public void setSearchReqs(List<String> searchReqs) {
+		this.searchRequests = searchReqs;
+	}
+	
+	public void addSearchReq(String req) {
+		if(!this.searchRequests.contains(req)) {
+			this.searchRequests.add(req);
+            System.out.println("-------------- SEARCH REQUESTS: " + String.join(", ", Session.getInstance().getSearchReqs()));
+		}
 	}
 	
 	public String toString() {
