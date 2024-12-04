@@ -914,7 +914,7 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
     
   
     
-    public void showNonAdminManageHelpArticlesPage(Stage stage) {
+    public void showInstructorManageHelpArticlesPage(Stage stage) {
         stage.setTitle("Show Help Articles");
 
         // Create GridPane layout
@@ -979,7 +979,7 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         
         Button refreshArticleButton = new Button("Refresh Articles");
         refreshArticleButton.setOnAction(e -> {
-        	showNonAdminManageHelpArticlesPage(stage);
+        	showInstructorManageHelpArticlesPage(stage);
 
         });
 
@@ -1005,7 +1005,7 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
                 Optional<ButtonType> result = confirmationAlert.showAndWait();
                 if (result.isPresent() && result.get() == yesButton) {
                     helpService.deleteArticle(selectedArticle.get(0)); 
-                    showNonAdminManageHelpArticlesPage(stage); // Refresh page
+                    showInstructorManageHelpArticlesPage(stage); // Refresh page
                 }
             }
         });
@@ -1069,7 +1069,7 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
                 }
             });
 
-            showNonAdminManageHelpArticlesPage(stage);
+            showInstructorManageHelpArticlesPage(stage);
         });
 
 
@@ -1120,7 +1120,7 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
             });
             
             // Refresh page if necessary
-            showNonAdminManageHelpArticlesPage(stage);
+            showInstructorManageHelpArticlesPage(stage);
         });
 
         /***************************************************************
@@ -1303,6 +1303,218 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         stage.setScene(scene);
     }
     
+    
+    public void showStudentManageHelpArticlesPage(Stage stage) {
+        stage.setTitle("Show Help Articles");
+
+        // Create GridPane layout
+        GridPane gridPane = new GridPane();
+        gridPane.setPadding(new Insets(10));
+        gridPane.setHgap(10);
+        gridPane.setVgap(10);
+
+        // Label for page title
+        Label titleLabel = new Label("Show Help Articles");
+        
+        // Label for active Groups, n of articles that match each level
+        Label activeGroupsLabel = new Label("Active Groups: " + (Session.getInstance().getActiveGroups() == null ? "" : Session.getInstance().getActiveGroups().toString()));
+        Label levelInfoLabel = new Label("Levels Matched -- beginner:  " + 0 + " intermediate: "+ 0 + " advanced: "+ 0);
+
+        // Table to display help articles
+        TableView<List<String>> tableView = new TableView<>(); 
+        TableColumn<List<String>, String> sequenceCol = new TableColumn<>("Header");
+        sequenceCol.setCellValueFactory(cellData -> {
+            int index = tableView.getItems().indexOf(cellData.getValue()) + 1;
+            return new SimpleStringProperty(String.valueOf(index));
+        });
+        TableColumn<List<String>, String> titleCol = new TableColumn<>("Title");
+        titleCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(1)));
+        TableColumn<List<String>, String> authorsCol = new TableColumn<>("Authors");
+        authorsCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(4)));
+        TableColumn<List<String>, String> abstractCol = new TableColumn<>("Abstract");
+        abstractCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(2)));
+        TableColumn<List<String>, String> levelCol = new TableColumn<>("Level");
+        levelCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(3)));
+
+        tableView.getColumns().addAll(sequenceCol, titleCol, authorsCol, abstractCol, levelCol);
+        helpService.loadArticlesIntoTable(tableView); // Load article data into the table
+        refreshLabels(activeGroupsLabel, levelInfoLabel, tableView);
+
+
+        /***************************************************************
+         * 
+         * FILTERING ARTICLES BY GROUP
+         *  
+         ***************************************************************/
+        // group articles button 
+        Button filterByGroupButton = new Button("Filter by Group");
+        filterByGroupButton.setOnAction(e -> {
+            List<String> availableGroups = helpRepo.getAvailableGroups();
+            System.out.println("Available Groups: " + availableGroups);
+
+            // create a custom dialog for group selection
+            Dialog<ButtonType> groupDialog = new Dialog<>();
+            groupDialog.setTitle("Select Article Groups");
+            groupDialog.setHeaderText("Choose groups to filter articles");
+
+            // Create a ListView for group selection
+            ListView<String> listView = new ListView<>();
+            listView.getItems().addAll(availableGroups);
+            listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+            // set dialog's content to the ListView
+            DialogPane dialogPane = groupDialog.getDialogPane();
+            dialogPane.setContent(listView);
+            dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+            // Show the dialog and check the result
+            groupDialog.showAndWait().ifPresent(result -> {
+                if (result == ButtonType.OK) {
+                    // Retrieve selected groups from ListView
+                    List<String> selectedGroups = new ArrayList<>(listView.getSelectionModel().getSelectedItems());
+                    System.out.println("Selected Groups: " + selectedGroups);
+                    Session.getInstance().setActiveGroups(selectedGroups);
+                    
+                    helpService.loadArticlesIntoTable(tableView, selectedGroups);
+                    refreshLabels(activeGroupsLabel, levelInfoLabel, tableView);
+
+                }
+            });
+        });
+        
+        /***************************************************************
+         * 
+         * FILTERING ARTICLES BY LEVEL
+         *  
+         ***************************************************************/
+     // Filter articles by difficulty level button
+        Button filterByLevelButton = new Button("Filter by Difficulty Level");
+        filterByLevelButton.setOnAction(e -> {
+            // Replace this with a method to get available levels (e.g., beginner, intermediate, advanced)
+            List<String> availableLevels = helpRepo.getAvailableLevels();
+            System.out.println("Available Difficulty Levels: " + availableLevels);
+
+            // Create a custom dialog for level selection
+            Dialog<ButtonType> levelDialog = new Dialog<>();
+            levelDialog.setTitle("Select Difficulty Levels");
+            levelDialog.setHeaderText("Choose difficulty levels to filter articles");
+
+            // Create a ListView for level selection
+            ListView<String> listView = new ListView<>();
+            listView.getItems().addAll(availableLevels);
+            listView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+            // Set dialog's content to the ListView
+            DialogPane dialogPane = levelDialog.getDialogPane();
+            dialogPane.setContent(listView);
+            dialogPane.getButtonTypes().addAll(ButtonType.OK, ButtonType.CANCEL);
+
+            // Show the dialog and check the result
+            levelDialog.showAndWait().ifPresent(result -> {
+                if (result == ButtonType.OK) {
+                    // Retrieve selected levels from ListView
+                    List<String> selectedLevels = new ArrayList<>(listView.getSelectionModel().getSelectedItems());
+                    System.out.println("Selected Difficulty Levels: " + selectedLevels);
+
+                    // Load articles filtered by the selected levels
+                    helpService.loadArticlesIntoTable(tableView, null, selectedLevels);
+                    refreshLabels(activeGroupsLabel, levelInfoLabel, tableView);
+                }
+            });
+        });
+        
+        /***************************************************************
+         * 
+         * VIEW ARTICLE DETAILS BY SEQUENCE NUMBER
+         *  
+         ***************************************************************/
+        Button viewArticleDetailsButton = new Button("View Article by Sequence Number");
+        viewArticleDetailsButton.setOnAction(e -> {
+            // Prompt the user for a sequence number
+            TextInputDialog inputDialog = new TextInputDialog();
+            inputDialog.setTitle("View Article");
+            inputDialog.setHeaderText("Enter Sequence Number");
+            inputDialog.setContentText("Please enter the sequence number of the article:");
+
+            Optional<String> result = inputDialog.showAndWait();
+            result.ifPresent(sequenceNumberStr -> {
+                try {
+                    int sequenceNumber = Integer.parseInt(sequenceNumberStr.trim());
+                    if (sequenceNumber > 0 && sequenceNumber <= tableView.getItems().size()) {
+                        // Retrieve the article based on the sequence number
+                        List<String> selectedArticle = tableView.getItems().get(sequenceNumber - 1);
+                        // Call the viewArticleForm method to display article details
+                        helpService.viewArticleForm(selectedArticle.get(0));
+                    } else {
+                        helpService.showError("Invalid sequence number. Please enter a number between 1 and " + tableView.getItems().size() + ".");
+                    }
+                } catch (NumberFormatException ex) {
+                    helpService.showError("Invalid input. Please enter a valid number.");
+                }
+            });
+        });
+
+        /***************************************************************
+         * 
+         * SEARCHING ARTICLES BY KEYWORDS 
+         *  
+         ***************************************************************/
+        TextField searchField = new TextField();
+        searchField.setPromptText("Search articles by keyword...");
+        searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+            helpService.searchArticlesByKeyword(newValue, tableView);
+            Session.getInstance().addSearchReq(newValue);
+            refreshLabels(activeGroupsLabel, levelInfoLabel, tableView);
+        });
+        
+        // Logout button
+        Button logoutButton = new Button("Logout");
+        logoutButton.setOnAction(e -> {
+            Session.getInstance().clear();
+            try {
+                start(stage); // Redirect to login page
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+        
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> {
+        	try {
+				if(roleRepo.getRolesForUser(Session.getInstance().getCurrentUser().getId())
+						.stream()
+						.map(Role::getRoleName)
+						.anyMatch(p -> p.equals("admin"))) {
+					showAdminHomePage(stage);
+				} else {
+					showInstructorHomePage(stage);
+				}
+			} catch (SQLException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+        });
+        
+        
+     // Adjusted layout for GridPane
+        gridPane.add(titleLabel, 0, 0, 3, 1); 
+        gridPane.add(activeGroupsLabel, 0, 1, 3, 1); // Active groups label spanning three columns
+        gridPane.add(levelInfoLabel, 0, 2, 3, 1); // Level info label spanning three columns
+        gridPane.add(searchField, 0, 3, 3, 1); // Search field spanning three columns
+        gridPane.add(tableView, 0, 4, 3, 1); // Table spanning three columns
+
+        // Buttons
+        gridPane.add(filterByGroupButton, 0, 5);
+        gridPane.add(filterByLevelButton, 1, 5);
+        gridPane.add(viewArticleDetailsButton, 0, 6);
+        gridPane.add(backButton, 0, 7);
+        gridPane.add(logoutButton, 1, 7);
+
+        // Set the Scene and show the Stage
+        Scene scene = new Scene(gridPane, 800, 600);
+        stage.setScene(scene);
+    }
+    
     private void showInstructorHomePage(Stage stage) {
         stage.setTitle("Home");
         
@@ -1317,7 +1529,7 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         Button manageHelpArticlesButton = new Button("Manage Help Articles");
         manageHelpArticlesButton.setOnAction(e -> {
         	try {
-				showAdminManageHelpArticlesPage(stage);
+				showInstructorManageHelpArticlesPage(stage);
 			} catch (Exception e1) {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
@@ -1662,7 +1874,7 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
 
         Button showArticlesButton = new Button("Show Articles");
         showArticlesButton.setOnAction(e -> {
-            showNonAdminManageHelpArticlesPage(stage);
+            showStudentManageHelpArticlesPage(stage);
         });
 
         Button logoutButton = new Button("Logout");
