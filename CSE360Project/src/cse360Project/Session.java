@@ -25,6 +25,7 @@ public class Session {
     private User currentUser; // Store the current user object
     private boolean OTPUsed;
     private List<String> invitedRoles;
+    private List<String > activeGroups;
 
     /**********************************************************************************************
      * Constructors
@@ -80,7 +81,17 @@ public class Session {
 	{
 		return this.invitedRoles;
 	}
-
+	
+	public List<String> getActiveGroups()
+	{
+		return this.activeGroups;
+	}
+	
+	public void setActiveGroups(List<String> activeGroups)
+	{
+		this.activeGroups = activeGroups;
+	}
+	
 	public String toString() {
 		String userDetails = currentUser != null ? currentUser.toString() : "NO SESSION USER SET";
 		return "Session [currentUser=" + userDetails + ", OTPUsed=" + OTPUsed + ", invitedRoles=" + invitedRoles + "]";

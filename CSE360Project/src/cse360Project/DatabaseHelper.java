@@ -7,8 +7,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
 import java.util.Base64;
-
+import java.util.List;
 import java.sql.ResultSet;
 
 /*******
@@ -174,49 +175,38 @@ class DatabaseHelper {
 	// KEEP _--------------___-------_--_--_-_----_-_---
 	// Method to validate an invitation code and store the roles in the session
 	
+	private void dropTables() throws SQLException {
+	    try (Connection connection = DriverManager.getConnection(DB_URL, USER, PASS);
+	         Statement statement = connection.createStatement()) {
 
-	// Method to delete the tables from the database
-	public void dropTables() throws SQLException {
-	    String dropQuery;
+	        // Query to retrieve all tables in the database
+	        String fetchTablesQuery = "SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA='PUBLIC'";
+	        List<String> tablesToDrop = new ArrayList<>();
 
-	    // Drop tables with foreign key dependencies first
-	    dropQuery = "DROP TABLE IF EXISTS article_keywords";
-	    statement.executeUpdate(dropQuery);
+	        try (ResultSet resultSet = statement.executeQuery(fetchTablesQuery)) {
+	            while (resultSet.next()) {
+	                tablesToDrop.add(resultSet.getString("TABLE_NAME"));
+	            }
+	        }
 
-	    dropQuery = "DROP TABLE IF EXISTS article_groups";
-	    statement.executeUpdate(dropQuery);
+	        System.out.println("Tables found in the database: " + tablesToDrop);
 
-	    dropQuery = "DROP TABLE IF EXISTS user_roles";
-	    statement.executeUpdate(dropQuery);
+	        // Drop each table in the list
+	        for (String table : tablesToDrop) {
+	            try {
+	                System.out.println("Dropping table: " + table);
+	                statement.executeUpdate("DROP TABLE IF EXISTS " + table + " CASCADE");
+	            } catch (SQLException e) {
+	                System.err.println("Error dropping table " + table + ": " + e.getMessage());
+	            }
+	        }
 
-	    dropQuery = "DROP TABLE IF EXISTS invitation_roles";
-	    statement.executeUpdate(dropQuery);
-
-	    // Drop independent tables next
-	    dropQuery = "DROP TABLE IF EXISTS backups";
-	    statement.executeUpdate(dropQuery);
-
-	    dropQuery = "DROP TABLE IF EXISTS invitations";
-	    statement.executeUpdate(dropQuery);
-
-	    dropQuery = "DROP TABLE IF EXISTS help_articles";
-	    statement.executeUpdate(dropQuery);
-
-	    dropQuery = "DROP TABLE IF EXISTS groups";
-	    statement.executeUpdate(dropQuery);
-
-	    dropQuery = "DROP TABLE IF EXISTS keywords";
-	    statement.executeUpdate(dropQuery);
-
-	    dropQuery = "DROP TABLE IF EXISTS users";
-	    statement.executeUpdate(dropQuery);
-
-	    dropQuery = "DROP TABLE IF EXISTS roles";
-	    statement.executeUpdate(dropQuery);
-
-	    System.out.println("All tables have been dropped.");
+	        System.out.println("All tables have been dropped successfully.");
+	    } catch (SQLException e) {
+	        System.err.println("Error while dropping all tables: " + e.getMessage());
+	        throw e; // Rethrow exception for critical issues
+	    }
 	}
-
 	// Check if the database is empty
 	public boolean isDatabaseEmpty() throws SQLException {
 		String query = "SELECT COUNT(*) AS count FROM users";

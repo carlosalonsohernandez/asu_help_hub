@@ -277,6 +277,66 @@ public class HelpArticleService {
     public List<Map<String, Object>> getArticlesForNonAdmin() {
         return articleRepo.fetchArticlesForNonAdmin();
     }
+    
+    
+    public void viewArticleForm(String articleHeader) {
+        // Load the existing article data from the repository using the header
+        HelpArticle existingArticle = articleRepo.getArticleByHeader(articleHeader);
+        if (existingArticle == null) {
+            showError("Article not found.");
+            return;
+        }
+
+        // Open a new window for viewing the article
+        Stage viewArticleStage = new Stage();
+        viewArticleStage.setTitle("View Article");
+
+        GridPane gridPane = new GridPane();
+        gridPane.setPadding(new Insets(10));
+        gridPane.setHgap(10);
+        gridPane.setVgap(10);
+
+        // Display article data in read-only fields
+        Label headerLabel = new Label(existingArticle.getHeader());
+        Label levelLabel = new Label(existingArticle.getLevel());
+        Label titleLabel = new Label(existingArticle.getTitle());
+        Label shortDescriptionLabel = new Label(existingArticle.getShortDescription());
+        Label bodyLabel = new Label(existingArticle.getBody());
+        Label keywordsLabel = new Label(String.join(",", existingArticle.getKeywords()));
+        Label linksLabel = new Label(String.join(",", existingArticle.getLinks()));
+        Label groupIdentifiersLabel = new Label(String.join(",", existingArticle.getGroupIdentifiers()));
+        Label sensitiveLabel = new Label(existingArticle.isSensitive() ? "Yes" : "No");
+
+        // Adding article details to the grid
+        gridPane.add(new Label("Header:"), 0, 0);
+        gridPane.add(headerLabel, 1, 0);
+        gridPane.add(new Label("Level:"), 0, 1);
+        gridPane.add(levelLabel, 1, 1);
+        gridPane.add(new Label("Title:"), 0, 2);
+        gridPane.add(titleLabel, 1, 2);
+        gridPane.add(new Label("Short Description:"), 0, 3);
+        gridPane.add(shortDescriptionLabel, 1, 3);
+        gridPane.add(new Label("Body:"), 0, 4);
+        gridPane.add(bodyLabel, 1, 4);
+        gridPane.add(new Label("Keywords (comma-separated):"), 0, 5);
+        gridPane.add(keywordsLabel, 1, 5);
+        gridPane.add(new Label("Links (comma-separated):"), 0, 6);
+        gridPane.add(linksLabel, 1, 6);
+        gridPane.add(new Label("Group Identifiers (comma-separated):"), 0, 7);
+        gridPane.add(groupIdentifiersLabel, 1, 7);
+        gridPane.add(new Label("Is Sensitive:"), 0, 8);
+        gridPane.add(sensitiveLabel, 1, 8);
+
+        // Adding a close button
+        Button closeButton = new Button("Close");
+        closeButton.setOnAction(e -> viewArticleStage.close());
+        gridPane.add(closeButton, 1, 9);
+
+        // Set up the scene and show the stage
+        Scene scene = new Scene(gridPane, 400, 500);
+        viewArticleStage.setScene(scene);
+        viewArticleStage.show();
+    }
 
     public void updateArticleForm(String articleHeader) {
         // Load the existing article data from the repository using the header

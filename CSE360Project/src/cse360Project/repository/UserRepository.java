@@ -173,6 +173,14 @@ public class UserRepository {
 	    }
 	}
 	
+	
+	public void clearAllUsers() throws SQLException {
+	    String query = "DELETE FROM users";
+	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+	        pstmt.executeUpdate();
+	    }
+	}
+	
 	// get user id by username
     public Integer getUserIdByUsername(String username) throws SQLException {
         String selectUserSql = "SELECT id FROM users WHERE username = ?";

@@ -822,6 +822,22 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
                 }
             });
         });
+        
+        /***************************************************************
+         * 
+         * VIEW ARTICLE DETAILS BY SEQUENCE NUMBER
+         *  
+         ***************************************************************/
+     // Filter articles by difficulty level button
+        Button viewArticleDetailsButton = new Button("Filter by Difficulty Level"); 
+        viewArticleDetailsButton.setOnAction(e -> {
+			List<String> selectedArticle = tableView.getSelectionModel().getSelectedItem();
+			if (selectedArticle != null) {
+				// Open form with pre-filled data for the selected article
+				helpService.updateArticleForm(selectedArticle.get(0));
+			}
+        	
+        });
 
         /***************************************************************
          * 
@@ -886,7 +902,7 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
   
     
     public void showNonAdminManageHelpArticlesPage(Stage stage) {
-        stage.setTitle("Manage Help Articles");
+        stage.setTitle("Show Help Articles");
 
         // Create GridPane layout
         GridPane gridPane = new GridPane();
@@ -895,7 +911,11 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         gridPane.setVgap(10);
 
         // Label for page title
-        Label titleLabel = new Label("Manage Help Articles");
+        Label titleLabel = new Label("Show Help Articles");
+        
+        // Label for active Groups, n of articles that match each level
+        Label activeGroupsLabel = new Label("Active Groups: " + (Session.getInstance().getActiveGroups() == null ? "" : Session.getInstance().getActiveGroups().toString()));
+        Label levelInfoLabel = new Label("Levels Matched -- beginner:  " + 0 + " intermediate: "+ 0 + " advanced: "+ 0);
 
         // Table to display help articles
         TableView<List<String>> tableView = new TableView<>(); 
@@ -906,13 +926,16 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         });
         TableColumn<List<String>, String> titleCol = new TableColumn<>("Title");
         titleCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(1)));
-        TableColumn<List<String>, String> authorsCol = new TableColumn<>("Short Description");
+        TableColumn<List<String>, String> authorsCol = new TableColumn<>("Authors");
         authorsCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(4)));
-        TableColumn<List<String>, String> abstractCol = new TableColumn<>("Level");
+        TableColumn<List<String>, String> abstractCol = new TableColumn<>("Abstract");
         abstractCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(2)));
+        TableColumn<List<String>, String> levelCol = new TableColumn<>("Level");
+        levelCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(3)));
 
-        tableView.getColumns().addAll(sequenceCol, titleCol, authorsCol, abstractCol);
+        tableView.getColumns().addAll(sequenceCol, titleCol, authorsCol, abstractCol, levelCol);
         helpService.loadArticlesIntoTable(tableView); // Load article data into the table
+        refreshLabels(activeGroupsLabel, levelInfoLabel, tableView);
 
         /***************************************************************
          * 
@@ -943,7 +966,7 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         
         Button refreshArticleButton = new Button("Refresh Articles");
         refreshArticleButton.setOnAction(e -> {
-        	showAdminManageHelpArticlesPage(stage);
+        	showNonAdminManageHelpArticlesPage(stage);
 
         });
 
@@ -969,7 +992,7 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
                 Optional<ButtonType> result = confirmationAlert.showAndWait();
                 if (result.isPresent() && result.get() == yesButton) {
                     helpService.deleteArticle(selectedArticle.get(0)); 
-                    showAdminManageHelpArticlesPage(stage); // Refresh page
+                    showNonAdminManageHelpArticlesPage(stage); // Refresh page
                 }
             }
         });
@@ -1033,7 +1056,7 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
                 }
             });
 
-            showAdminManageHelpArticlesPage(stage);
+            showNonAdminManageHelpArticlesPage(stage);
         });
 
 
@@ -1084,7 +1107,7 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
             });
             
             // Refresh page if necessary
-            showAdminManageHelpArticlesPage(stage);
+            showNonAdminManageHelpArticlesPage(stage);
         });
 
         /***************************************************************
@@ -1119,8 +1142,11 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
                     // Retrieve selected groups from ListView
                     List<String> selectedGroups = new ArrayList<>(listView.getSelectionModel().getSelectedItems());
                     System.out.println("Selected Groups: " + selectedGroups);
+                    Session.getInstance().setActiveGroups(selectedGroups);
+                    
+                    helpService.loadArticlesIntoTable(tableView, selectedGroups);
+                    refreshLabels(activeGroupsLabel, levelInfoLabel, tableView);
 
-helpService.loadArticlesIntoTable(tableView, selectedGroups);
                 }
             });
         });
@@ -1161,6 +1187,38 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
 
                     // Load articles filtered by the selected levels
                     helpService.loadArticlesIntoTable(tableView, null, selectedLevels);
+                    refreshLabels(activeGroupsLabel, levelInfoLabel, tableView);
+                }
+            });
+        });
+        
+        /***************************************************************
+         * 
+         * VIEW ARTICLE DETAILS BY SEQUENCE NUMBER
+         *  
+         ***************************************************************/
+        Button viewArticleDetailsButton = new Button("View Article by Sequence Number");
+        viewArticleDetailsButton.setOnAction(e -> {
+            // Prompt the user for a sequence number
+            TextInputDialog inputDialog = new TextInputDialog();
+            inputDialog.setTitle("View Article");
+            inputDialog.setHeaderText("Enter Sequence Number");
+            inputDialog.setContentText("Please enter the sequence number of the article:");
+
+            Optional<String> result = inputDialog.showAndWait();
+            result.ifPresent(sequenceNumberStr -> {
+                try {
+                    int sequenceNumber = Integer.parseInt(sequenceNumberStr.trim());
+                    if (sequenceNumber > 0 && sequenceNumber <= tableView.getItems().size()) {
+                        // Retrieve the article based on the sequence number
+                        List<String> selectedArticle = tableView.getItems().get(sequenceNumber - 1);
+                        // Call the viewArticleForm method to display article details
+                        helpService.viewArticleForm(selectedArticle.get(0));
+                    } else {
+                        helpService.showError("Invalid sequence number. Please enter a number between 1 and " + tableView.getItems().size() + ".");
+                    }
+                } catch (NumberFormatException ex) {
+                    helpService.showError("Invalid input. Please enter a valid number.");
                 }
             });
         });
@@ -1174,6 +1232,7 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         searchField.setPromptText("Search articles by keyword...");
         searchField.textProperty().addListener((observable, oldValue, newValue) -> {
             helpService.searchArticlesByKeyword(newValue, tableView);
+            refreshLabels(activeGroupsLabel, levelInfoLabel, tableView);
         });
 
         // Logout button
@@ -1205,20 +1264,25 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         });
         
         
-        // Add gridPane elements
+     // Adjusted layout for GridPane
         gridPane.add(titleLabel, 0, 0, 3, 1); 
-        gridPane.add(searchField, 0, 1, 3, 1); 
-        gridPane.add(tableView, 0, 2, 3, 1); 
-        gridPane.add(createArticleButton, 0, 3); 
-        gridPane.add(updateArticleButton, 1, 3); 
-        gridPane.add(refreshArticleButton, 2, 3); 
-        gridPane.add(deleteArticleButton, 0, 4); 
-        gridPane.add(backupButton, 1, 4); 
-        gridPane.add(restoreButton, 2, 4); 
-        gridPane.add(filterByGroupButton, 0, 5); 
-        gridPane.add(filterByLevelButton, 1, 5);
-        gridPane.add(backButton, 0, 6); 
-        gridPane.add(logoutButton, 1, 6); 
+        gridPane.add(activeGroupsLabel, 0, 1, 3, 1); // Active groups label spanning three columns
+        gridPane.add(levelInfoLabel, 0, 2, 3, 1); // Level info label spanning three columns
+        gridPane.add(searchField, 0, 3, 3, 1); // Search field spanning three columns
+        gridPane.add(tableView, 0, 4, 3, 1); // Table spanning three columns
+
+        // Buttons
+        gridPane.add(createArticleButton, 0, 5);
+        gridPane.add(updateArticleButton, 1, 5);
+        gridPane.add(refreshArticleButton, 2, 5);
+        gridPane.add(deleteArticleButton, 0, 6);
+        gridPane.add(backupButton, 1, 6);
+        gridPane.add(restoreButton, 2, 6);
+        gridPane.add(filterByGroupButton, 0, 7);
+        gridPane.add(filterByLevelButton, 1, 7);
+        gridPane.add(viewArticleDetailsButton, 0, 8);
+        gridPane.add(backButton, 0, 9);
+        gridPane.add(logoutButton, 1, 9);
 
         // Set the Scene and show the Stage
         Scene scene = new Scene(gridPane, 800, 600);
@@ -1658,6 +1722,35 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         dialogStage.setScene(scene);
         dialogStage.show();
     }
+    
+    private void refreshLabels(Label activeGroupsLabel, Label levelInfoLabel, TableView<List<String>> tableView) {
+        // Update activeGroupsLabel
+        List<String> activeGroups = Session.getInstance().getActiveGroups();
+        activeGroupsLabel.setText("Active Groups: " + (activeGroups == null || activeGroups.isEmpty() ? "All" : String.join(", ", activeGroups)));
+
+        // Count articles by level
+        int beginnerCount = 0, intermediateCount = 0, advancedCount = 0;
+
+        for (List<String> article : tableView.getItems()) {
+            String level = article.get(3); // Assuming the level is in the 4th column (index 3)
+            switch (level.toLowerCase()) {
+                case "beginner":
+                    beginnerCount++;
+                    break;
+                case "intermediate":
+                    intermediateCount++;
+                    break;
+                case "advanced":
+                    advancedCount++;
+                    break;
+            }
+        }
+
+        // Update levelInfoLabel
+        levelInfoLabel.setText(String.format("Levels Matched -- Beginner: %d, Intermediate: %d, Advanced: %d",
+                beginnerCount, intermediateCount, advancedCount));
+    }
+    
 	/**********************************************************************************************
 
 	Main
@@ -1668,4 +1761,11 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
     public static void main(String[] args) {
         launch(args);
     }
+    
+    
+   /*******
+    * Manual Testing
+    ***********/
+    
+
 }
