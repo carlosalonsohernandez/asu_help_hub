@@ -28,7 +28,7 @@ public class Session {
     private boolean OTPUsed;
     private List<String> invitedRoles;
     private List<String > activeGroups;
-    private List<String> searchRequests = new ArrayList<>(Arrays.asList("H", "H2"));
+    private List<String> searchRequests = new ArrayList<>(Arrays.asList("G", "Gi", "Git"));
 
     /**********************************************************************************************
      * Constructors

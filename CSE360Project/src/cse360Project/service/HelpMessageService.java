@@ -1,9 +1,12 @@
 package cse360Project.service;
 
 import cse360Project.model.HelpMessage;
+import cse360Project.model.MessageType;
 import cse360Project.repository.HelpMessageRepository;
+import javafx.scene.control.TableView;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -29,7 +32,7 @@ public class HelpMessageService {
      * @throws SQLException If a database access error occurs
      */
     public void sendGenericMessage(int userId, String content) throws SQLException {
-        HelpMessage message = new HelpMessage(userId, HelpMessage.MessageType.GENERIC, content);
+        HelpMessage message = new HelpMessage(userId, MessageType.GENERIC, content);
         helpMessageRepo.insertHelpMessage(message);
     }
 
@@ -41,7 +44,7 @@ public class HelpMessageService {
      * @throws SQLException If a database access error occurs
      */
     public void sendSpecificMessage(int userId, String content) throws SQLException {
-        HelpMessage message = new HelpMessage(userId, HelpMessage.MessageType.SPECIFIC, content);
+        HelpMessage message = new HelpMessage(userId, MessageType.SPECIFIC, content);
         helpMessageRepo.insertHelpMessage(message);
     }
 
@@ -65,5 +68,22 @@ public class HelpMessageService {
         return helpMessageRepo.getHelpMessagesByUserId(userId);
     }
 
-    // Additional business logic methods can be added here
+    public void loadHelpMessagesIntoTable(TableView<List<String>> tableView) {
+        try {
+            List<HelpMessage> messages = helpMessageRepo.getAllHelpMessages();
+            List<List<String>> tableData = new ArrayList<>();
+            for (HelpMessage message : messages) {
+                tableData.add(List.of(
+                    String.valueOf(message.getId()),
+                    String.valueOf(message.getUserId()),
+                    message.getMessageType().name(),
+                    message.getContent(),
+                    message.getTimestamp().toString()
+                ));
+            }
+            tableView.getItems().setAll(tableData);
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
 }

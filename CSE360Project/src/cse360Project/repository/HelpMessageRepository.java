@@ -1,7 +1,7 @@
 package cse360Project.repository;
 
 import cse360Project.model.HelpMessage;
-
+import cse360Project.model.MessageType;
 
 import java.sql.*;
 import java.time.LocalDateTime;
@@ -37,7 +37,7 @@ public class HelpMessageRepository {
                 HelpMessage msg = new HelpMessage(
                         rs.getInt("id"),
                         rs.getInt("user_id"),
-                        HelpMessage.MessageType.valueOf(rs.getString("message_type")),
+                        MessageType.valueOf(rs.getString("message_type")),
                         rs.getString("content"),
                         rs.getTimestamp("timestamp").toLocalDateTime()
                 );
@@ -58,7 +58,7 @@ public class HelpMessageRepository {
                     HelpMessage msg = new HelpMessage(
                             rs.getInt("id"),
                             rs.getInt("user_id"),
-                            HelpMessage.MessageType.valueOf(rs.getString("message_type")),
+                            MessageType.valueOf(rs.getString("message_type")),
                             rs.getString("content"),
                             rs.getTimestamp("timestamp").toLocalDateTime()
                     );
@@ -67,6 +67,14 @@ public class HelpMessageRepository {
             }
         }
         return messages;
+    }
+    
+    public void deleteHelpMessage(int id) throws SQLException {
+        String query = "DELETE FROM help_messages WHERE id = ?";
+        try (PreparedStatement stmt = connection.prepareStatement(query)) {
+            stmt.setInt(1, id);
+            stmt.executeUpdate();
+        }
     }
 
     // Additional methods as needed (e.g., delete, update)

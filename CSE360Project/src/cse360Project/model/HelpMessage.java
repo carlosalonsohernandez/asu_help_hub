@@ -1,6 +1,7 @@
 package cse360Project.model;
 
 import java.time.LocalDateTime;
+import cse360Project.model.MessageType;
 
 public class HelpMessage {
     private int id;
@@ -9,16 +10,13 @@ public class HelpMessage {
     private String content;
     private LocalDateTime timestamp;
 
-    public enum MessageType {
-        GENERIC,
-        SPECIFIC
-    }
 
     // Constructors
     public HelpMessage(int userId, MessageType messageType, String content) {
         this.userId = userId;
         this.messageType = messageType;
         this.content = content;
+        this.timestamp = LocalDateTime.now();
     }
 
     public HelpMessage(int id, int userId, MessageType messageType, String content, LocalDateTime timestamp) {

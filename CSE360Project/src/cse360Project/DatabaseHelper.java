@@ -150,6 +150,18 @@ class DatabaseHelper {
 	            + "user_id INT, "
 	            + "FOREIGN KEY (user_id) REFERENCES users(id))";
 	    statement.execute(backupsTable);
+	    
+
+	    // Help Messages table
+	    String helpMessagesTable = "CREATE TABLE IF NOT EXISTS help_messages ("
+	            + "id BIGINT AUTO_INCREMENT PRIMARY KEY, "
+	            + "user_id INT NOT NULL, "
+	            + "message_type VARCHAR(50) NOT NULL, "
+	            + "content TEXT NOT NULL, "
+	            + "timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, "
+	            + "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+	            + ")";
+	    statement.execute(helpMessagesTable);
 	}
 	// insert default roles into roles table if not already there 
 	private void insertDefaultRoles() throws SQLException {

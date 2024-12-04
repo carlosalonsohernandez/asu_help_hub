@@ -38,6 +38,8 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 import cse360Project.model.HelpArticle;
+import cse360Project.model.MessageType;
+import cse360Project.model.HelpMessage;
 import cse360Project.model.Role;
 import cse360Project.repository.HelpArticleRepository;
 import cse360Project.repository.HelpMessageRepository;
@@ -396,6 +398,7 @@ public class App extends Application {
          Button generateInviteButton = new Button("Generate Invite");
          Button manageUsersButton = new Button("Manage Users");
          Button manageHelpArticlesButton = new Button("Manage Help Articles");
+         Button showHelpMessagesButton = new Button("Show Help Messages");
          
          logoutButton.setOnAction(e -> {
          	Session.getInstance().clear();
@@ -440,6 +443,15 @@ public class App extends Application {
     			}
 
             });
+         
+         showHelpMessagesButton.setOnAction(e-> {
+        	try {
+        		showHelpMessagesPage(stage);
+        	} catch (Exception e1) {
+        		e1.printStackTrace();
+        	}
+        	 
+         });
         
          
          // Add elements to the GridPane
@@ -447,7 +459,8 @@ public class App extends Application {
          gridPane.add(generateInviteButton, 0, 2);
          gridPane.add(manageUsersButton, 0, 3);
          gridPane.add(manageHelpArticlesButton, 0, 4);
-         gridPane.add(logoutButton, 0, 5);
+         gridPane.add(showHelpMessagesButton, 0, 5);
+         gridPane.add(logoutButton, 0, 6);
 
          ScrollPane scrollPane = new ScrollPane();
          scrollPane.setContent(gridPane);
@@ -1468,6 +1481,101 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         stage.setScene(scene);
     }
     
+    public void showHelpMessagesPage(Stage stage) {
+        stage.setTitle("Manage Help Messages");
+
+        // Create GridPane layout
+        GridPane gridPane = new GridPane();
+        gridPane.setPadding(new Insets(10));
+        gridPane.setHgap(10);
+        gridPane.setVgap(10);
+
+        // Label for page title
+        Label titleLabel = new Label("Manage Help Messages");
+        gridPane.add(titleLabel, 0, 0, 2, 1); // Span two columns
+
+        // Table to display help messages
+        TableView<List<String>> tableView = new TableView<>();
+        TableColumn<List<String>, String> idCol = new TableColumn<>("ID");
+        idCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(0))); // Access ID
+        TableColumn<List<String>, String> userIdCol = new TableColumn<>("User ID");
+        userIdCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(1))); // Access User ID
+        TableColumn<List<String>, String> typeCol = new TableColumn<>("Message Type");
+        typeCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(2))); // Access Message Type
+        TableColumn<List<String>, String> contentCol = new TableColumn<>("Content");
+        contentCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(3))); // Access Content
+        TableColumn<List<String>, String> timestampCol = new TableColumn<>("Timestamp");
+        timestampCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().get(4))); // Access Timestamp
+
+        tableView.getColumns().addAll(idCol, userIdCol, typeCol, contentCol, timestampCol);
+
+        // Load messages into the table
+        helpMessageService.loadHelpMessagesIntoTable(tableView); // Load help messages from the service
+        gridPane.add(tableView, 0, 1, 2, 1); // Span two columns
+
+        // Delete Help Message button
+        Button deleteMessageButton = new Button("Delete Message");
+        deleteMessageButton.setOnAction(e -> {
+            List<String> selectedMessage = tableView.getSelectionModel().getSelectedItem();
+            if (selectedMessage != null) {
+                // Create a confirmation dialog
+                Alert confirmationAlert = new Alert(Alert.AlertType.CONFIRMATION);
+                confirmationAlert.setTitle("Confirm Deletion");
+                confirmationAlert.setHeaderText(null);
+                confirmationAlert.setContentText("Are you sure you want to delete this message?");
+
+                ButtonType yesButton = new ButtonType("Yes");
+                ButtonType noButton = new ButtonType("No");
+                confirmationAlert.getButtonTypes().setAll(yesButton, noButton);
+
+                Optional<ButtonType> result = confirmationAlert.showAndWait();
+                if (result.isPresent() && result.get() == yesButton) {
+                    // Perform deletion
+                    int messageId = Integer.parseInt(selectedMessage.get(0)); // Assuming ID is at index 0
+                    try {
+                        helpMessageRepo.deleteHelpMessage(messageId);
+                        helpMessageService.loadHelpMessagesIntoTable(tableView); // Refresh table
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            } else {
+                System.out.println("No message selected for deletion.");
+            }
+        });
+        gridPane.add(deleteMessageButton, 0, 2);
+
+        // Refresh button
+        Button refreshButton = new Button("Refresh");
+        refreshButton.setOnAction(e -> {
+            helpMessageService.loadHelpMessagesIntoTable(tableView); // Reload help messages into the table
+        });
+        gridPane.add(refreshButton, 1, 2);
+
+        // Back button
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> {
+            showAdminHomePage(stage); // Navigate back to admin home
+        });
+        gridPane.add(backButton, 0, 3);
+
+        // Logout button
+        Button logoutButton = new Button("Logout");
+        logoutButton.setOnAction(e -> {
+            Session.getInstance().clear();
+            try {
+                start(stage); // Redirect to login page
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+        gridPane.add(logoutButton, 1, 3);
+
+        // Set the Scene and show the Stage
+        Scene scene = new Scene(gridPane, 800, 400);
+        stage.setScene(scene);
+    }
+    
 
 
     private void showStudentHomePage(Stage stage) {
@@ -1487,6 +1595,12 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
             Optional<String> result = dialog.showAndWait();
             result.ifPresent(message -> {
                 // Send the generic message (Replace with actual logic to send it)
+            	try {
+					helpMessageService.sendGenericMessage(Session.getInstance().getCurrentUser().getId(), message);
+				} catch (SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
                 System.out.println("Generic Message Sent: " + message);
                 // implement when schema done: helpMessageService.sendMessage()
             });
@@ -1534,8 +1648,15 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
                 String searchTerms = data.get(0);
                 String description = data.get(1);
                 // Send the specific message (Replace with actual logic to send it)
-                System.out.println("Specific Message Sent: Search Terms - " + searchTerms + ", Description - " + description);
-                // TODO: Save these details to the help system or database
+                String helpContent = "Search Terms - " + searchTerms + ", Description - " + description;
+                
+                try {
+					helpMessageService.sendSpecificMessage(Session.getInstance().getCurrentUser().getId(), helpContent);
+				} catch (SQLException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+                
             });
         });
 
@@ -1752,6 +1873,10 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
                 beginnerCount, intermediateCount, advancedCount));
     }
     
+//    public enum MessageType {
+//        GENERIC,
+//        SPECIFIC
+//    }    
 	/**********************************************************************************************
 
 	Main
