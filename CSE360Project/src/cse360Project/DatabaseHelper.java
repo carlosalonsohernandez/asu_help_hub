@@ -47,6 +47,7 @@ class DatabaseHelper {
 			createTables();  // Create the necessary tables if they don't exist
 			insertDefaultRoles(); // Insert the default roles if they don't exist
 			displayHelpArticles();
+			displayHelpArticleGroups();
 		} catch (ClassNotFoundException e) {
 			System.err.println("JDBC Driver not found: " + e.getMessage());
 		}
@@ -290,6 +291,42 @@ class DatabaseHelper {
 		} 
 	}
 	
+	
+	public void displayHelpArticleGroups() throws SQLException {
+		System.out.println("Fetching groups");
+	    String sql = "SELECT g.group_name, a.id AS article_id, a.header, a.level, a.title "
+	               + "FROM help_article_groups g "
+	               + "JOIN help_articles a ON g.article_id = a.id "
+	               + "ORDER BY g.group_name, a.id";
+
+	    try (Statement stmt = connection.createStatement();
+	         ResultSet rs = stmt.executeQuery(sql)) {
+
+	        String currentGroup = null;
+
+	        while (rs.next()) {
+	            String groupName = rs.getString("group_name");
+	            long articleId = rs.getLong("article_id");
+	            String header = rs.getString("header");
+	            String level = rs.getString("level");
+	            String title = rs.getString("title");
+
+	            // Print group name only when it changes
+	            if (!groupName.equals(currentGroup)) {
+	                currentGroup = groupName;
+	                System.out.println("Group: " + groupName);
+	                System.out.println("----------------------------------------");
+	            }
+
+	            // Print article details
+	            System.out.println("  Article ID: " + articleId);
+	            System.out.println("  Header: " + header);
+	            System.out.println("  Level: " + level);
+	            System.out.println("  Title: " + title);
+	            System.out.println();
+	        }
+	    }
+	}
 	
 	public void displayHelpArticles() throws SQLException {
 	    String sql = "SELECT id, header, level, title, short_description, keywords, "

@@ -136,20 +136,7 @@ public class GroupRepository {
         // Convert the Set back to a List and return
         return new ArrayList<>(groupSet);
     }
-    
-	private boolean doesHelpArticleExist(long articleId) throws SQLException {
-	    String query = "SELECT COUNT(*) FROM help_articles WHERE id = ?";
-	    try (PreparedStatement pstmt = connection.prepareStatement(query)) {
-	        pstmt.setLong(1, articleId);
-	        try (ResultSet rs = pstmt.executeQuery()) {
-	            if (rs.next()) {
-	                return rs.getInt(1) > 0;
-	            }
-	        }
-	    }
-	    return false;
-	}
-	
+
 	public List<HelpArticle> getArticlesByLevels(List<String> levels) {
 	    // SQL query to filter articles based on levels
 		List<HelpArticle> articles = new ArrayList<>();
