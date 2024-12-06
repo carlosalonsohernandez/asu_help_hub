@@ -41,11 +41,13 @@ import cse360Project.model.HelpArticle;
 import cse360Project.model.MessageType;
 import cse360Project.model.HelpMessage;
 import cse360Project.model.Role;
+import cse360Project.repository.GroupRepository;
 import cse360Project.repository.HelpArticleRepository;
 import cse360Project.repository.HelpMessageRepository;
 import cse360Project.repository.InvitationRepository;
 import cse360Project.repository.RoleRepository;
 import cse360Project.repository.UserRepository;
+import cse360Project.service.GroupService;
 import cse360Project.service.HelpArticleService;
 import cse360Project.service.HelpMessageService;
 import cse360Project.service.InvitationService;
@@ -76,11 +78,13 @@ public class App extends Application {
 	private static UserRepository userRepo = null;
 	private static RoleRepository roleRepo = null;
 	private static InvitationRepository inviteRepo = null;
+	private static GroupRepository groupRepo = null;
 	private static HelpArticleRepository helpRepo = null;
 	private static HelpMessageRepository helpMessageRepo = null;
 	
 	
 	private static HelpArticleService helpService = null;
+	private static GroupService groupService = null;
 	private static HelpMessageService helpMessageService = null;
 	private static UserService userService = null;
 	private static InvitationService inviteService = null;
@@ -97,12 +101,14 @@ public class App extends Application {
         inviteRepo = new InvitationRepository(databaseHelper.getConnection());
         helpRepo = new HelpArticleRepository(databaseHelper.getConnection());
         helpMessageRepo = new HelpMessageRepository(databaseHelper.getConnection());
+        groupRepo = new GroupRepository(databaseHelper.getConnection(), helpRepo);
         
         
         // establish services
         userService = new UserService(userRepo, roleRepo);
+        groupService = new GroupService(groupRepo);
         inviteService = new InvitationService(inviteRepo, roleRepo);
-        helpService = new HelpArticleService(helpRepo);
+        helpService = new HelpArticleService(helpRepo, groupRepo);
         helpMessageService = new HelpMessageService(helpMessageRepo);
         
         databaseHelper.displayUsersByUser();
@@ -1536,6 +1542,17 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
 			}
 
         });
+        
+        Button manageGroupsButton = new Button("Manage General Groups");
+        manageGroupsButton.setOnAction(e -> {
+        	try {
+        		showManageGroupsPage(stage);
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+
+        });
 
         // logout 
         Button logoutButton = new Button("Logout");
@@ -1558,7 +1575,8 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
 
         gridPane.add(helloLabel, 0, 1);
         gridPane.add(manageHelpArticlesButton, 0, 2);
-        gridPane.add(logoutButton, 0, 3);
+        gridPane.add(manageGroupsButton, 0, 3);
+        gridPane.add(logoutButton, 0, 4);
         
         // use scroll pane for potentially long list of users
         ScrollPane scrollPane = new ScrollPane();
@@ -1666,6 +1684,100 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         Button refreshButton = new Button("Refresh");
         refreshButton.setOnAction(e -> {
             userService.loadUsersIntoTable(tableView); // Reload users into the table
+        });
+        gridPane.add(refreshButton, 1, 3);
+
+        // Back button
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> {
+            showAdminHomePage(stage); // Navigate back to admin home
+        });
+        gridPane.add(backButton, 0, 4);
+
+        // Logout button
+        Button logoutButton = new Button("Logout");
+        logoutButton.setOnAction(e -> {
+            Session.getInstance().clear();
+            try {
+                start(stage); // Redirect to login page
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+        gridPane.add(logoutButton, 1, 4);
+
+        // Set the Scene and show the Stage
+        Scene scene = new Scene(gridPane, 600, 400);
+        stage.setScene(scene);
+    }
+    
+    public void showManageGroupsPage(Stage stage) {
+        stage.setTitle("Manage Groups");
+
+        // Create GridPane layout
+        GridPane gridPane = new GridPane();
+        gridPane.setPadding(new Insets(10));
+        gridPane.setHgap(10);
+        gridPane.setVgap(10);
+
+        // Label for page title
+        Label titleLabel = new Label("Manage Groups");
+        gridPane.add(titleLabel, 0, 0, 2, 1); // Span two columns
+
+        // Table to display groups
+        TableView<List<String>> tableView = new TableView<>();
+
+        // Define the single column for group names
+        TableColumn<List<String>, String> groupNameCol = new TableColumn<>("Group Name");
+		groupNameCol.setCellValueFactory(cellData -> {
+			List<String> row = cellData.getValue();
+			// Handle cases where the list might be empty, though it shouldn't be in this context
+			return row.size() > 0 ? new SimpleStringProperty(row.get(0)) : new SimpleStringProperty("");
+		});
+
+     // Add the column to the table
+     tableView.getColumns().add(groupNameCol);
+        groupService.loadGroupsIntoTable(tableView); // Load group data into the table
+        gridPane.add(tableView, 0, 1, 2, 1); // Span two columns
+
+        // Create Group button
+        Button createGroupButton = new Button("Create Group");
+        createGroupButton.setOnAction(e -> {
+            System.out.println("Create");
+            // You can later implement functionality to show a form for creating a group
+        });
+        gridPane.add(createGroupButton, 0, 2);
+
+        // Update Group button
+        Button updateGroupButton = new Button("Update Group");
+        updateGroupButton.setOnAction(e -> {
+            List<String> selectedGroup = tableView.getSelectionModel().getSelectedItem();
+            if (selectedGroup != null) {
+                System.out.println("Update");
+                // You can later implement functionality to show a form for updating a group
+            } else {
+                System.out.println("No group selected for update.");
+            }
+        });
+        gridPane.add(updateGroupButton, 1, 2);
+
+        // Delete Group button
+        Button deleteGroupButton = new Button("Delete Group");
+        deleteGroupButton.setOnAction(e -> {
+            List<String> selectedGroup = tableView.getSelectionModel().getSelectedItem();
+            if (selectedGroup != null) {
+                System.out.println("Delete");
+                // You can later implement functionality for deleting a group
+            } else {
+                System.out.println("No group selected for deletion.");
+            }
+        });
+        gridPane.add(deleteGroupButton, 0, 3);
+
+        // Refresh button
+        Button refreshButton = new Button("Refresh");
+        refreshButton.setOnAction(e -> {
+            groupService.loadGroupsIntoTable(tableView); // Reload groups into the table
         });
         gridPane.add(refreshButton, 1, 3);
 
@@ -2085,10 +2197,6 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
                 beginnerCount, intermediateCount, advancedCount));
     }
     
-//    public enum MessageType {
-//        GENERIC,
-//        SPECIFIC
-//    }    
 	/**********************************************************************************************
 
 	Main

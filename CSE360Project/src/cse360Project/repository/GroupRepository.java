@@ -4,6 +4,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -23,7 +24,7 @@ public class GroupRepository {
 		this.articleRepo = articleRepo;
 	}
 	
-	public void insertGroup(long articleId, String groupIdentifiers, boolean isSensitive) throws SQLException {
+	public void insertGroup(long articleId, String groupIdentifiers) throws SQLException {
         // Now insert into help_article_groups with the generated article_id
         String insertGroupQuery = "INSERT INTO help_article_groups (article_id, group_name, is_special) "
                                 + "VALUES (?, ?, ?)";
@@ -31,85 +32,37 @@ public class GroupRepository {
             for (String groupIdentifier : groupIdentifiers.split(",")) {
                 pstmtGroup.setLong(1, articleId);  // Use the generated article_id
                 pstmtGroup.setString(2, groupIdentifier);
-                pstmtGroup.setBoolean(3, isSensitive); // Assuming isSensitive determines if it's special
                 pstmtGroup.executeUpdate();
             }
         }
 	}
 	
-	public List<HelpArticle> getArticlesByGroups(List<String> groups) {
-		return getArticlesByGroupsAndLevels(groups, null);
+	public List<List<String>> getAllGroups() throws SQLException {
+	    List<List<String>> groups = new ArrayList<>();
+	    String query = "SELECT DISTINCT group_name FROM help_article_groups";
+
+	    try (Statement stmt = connection.createStatement();
+	         ResultSet rs = stmt.executeQuery(query)) {
+	        while (rs.next()) {
+	            List<String> group = new ArrayList<>();
+	            group.add(rs.getString("group_name")); // Group name
+	            groups.add(group);
+	        }
+	    }
+
+	    return groups;
 	}
 	
-	public List<HelpArticle> getArticlesByLevel(List<String> levels) {
-		return getArticlesByGroupsAndLevels(null, levels);
+	public void addArticleToGroup(long articleId, String groupName) throws SQLException {
+	    // Add the article to the group
+	    String insertSql = "INSERT INTO help_article_groups (article_id, group_name) VALUES (?, ?)";
+	    try (PreparedStatement stmt = connection.prepareStatement(insertSql)) {
+	        stmt.setLong(1, articleId);
+	        stmt.setString(2, groupName);
+	        stmt.executeUpdate();
+	    }
 	}
 
-	public List<HelpArticle> getArticlesByGroupsAndLevels(List<String> groups, List<String> levels) {
-	    List<HelpArticle> articles = new ArrayList<>();
-	    
-	    if ((groups == null || groups.isEmpty()) && (levels == null || levels.isEmpty())) {
-	        return articles; // Return empty if no filters are provided
-	    }
-
-	    // Prepare the SQL query
-	    StringBuilder queryBuilder = new StringBuilder("SELECT * FROM help_articles WHERE ");
-	    
-	    boolean hasGroups = (groups != null && !groups.isEmpty());
-	    boolean hasLevels = (levels != null && !levels.isEmpty());
-
-	    if (hasGroups) {
-	        for (int i = 0; i < groups.size(); i++) {
-	            queryBuilder.append("group_identifiers LIKE ?");
-	            if (i < groups.size() - 1) {
-	                queryBuilder.append(" OR "); // Use OR to match any group
-	            }
-	        }
-	    }
-
-	    if (hasGroups && hasLevels) {
-	        queryBuilder.append(" AND "); // Combine groups and levels with AND
-	    }
-
-	    if (hasLevels) {
-	        queryBuilder.append("level IN (");
-	        for (int i = 0; i < levels.size(); i++) {
-	            queryBuilder.append("?");
-	            if (i < levels.size() - 1) {
-	                queryBuilder.append(", "); // Add commas between placeholders for levels
-	            }
-	        }
-	        queryBuilder.append(")");
-	    }
-
-	    String query = queryBuilder.toString();
-
-	    try (PreparedStatement stmt = connection.prepareStatement(query)) {
-	        int paramIndex = 1;
-
-	        // Set params for groups
-	        if (hasGroups) {
-	            for (String group : groups) {
-	                stmt.setString(paramIndex++, "%" + group + "%"); // Wildcard - partial match 
-	            }
-	        }
-
-	        // Set the parameters for levels
-	        if (hasLevels) {
-	            for (String level : levels) {
-	                stmt.setString(paramIndex++, level);
-	            }
-	        }
-
-	        try (ResultSet rs = stmt.executeQuery()) {
-	            articles = articleRepo.getArticlesFromResultSet(rs);
-	        }
-	    } catch (SQLException e) {
-	        e.printStackTrace();
-	    }
-	    
-	    return articles;
-	}
 
     public List<String> getAvailableGroups() {
         Set<String> groupSet = new HashSet<>(); // using set to avoid duplicates at first, convert to List at the end 

@@ -37,9 +37,10 @@ public class HelpArticleRepository {
     }
 
     // Create a new help article
-    public void createArticle(HelpArticle article) throws SQLException {
-        String query = "INSERT INTO help_articles (header, level, title, short_description, keywords, body, links, group_identifiers, is_sensitive, safe_title, safe_description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        try (PreparedStatement pstmt = connection.prepareStatement(query)) {
+    public long createArticle(HelpArticle article) throws SQLException {
+        String query = "INSERT INTO help_articles (header, level, title, short_description, keywords, body, links, group_identifiers, is_sensitive, safe_title, safe_description) "
+                     + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        try (PreparedStatement pstmt = connection.prepareStatement(query, Statement.RETURN_GENERATED_KEYS)) {
             pstmt.setString(1, article.getHeader());
             pstmt.setString(2, article.getLevel());
             pstmt.setString(3, article.getTitle());
@@ -51,7 +52,17 @@ public class HelpArticleRepository {
             pstmt.setBoolean(9, article.isSensitive());
             pstmt.setString(10, article.getSafeTitle());
             pstmt.setString(11, article.getSafeDescription());
+
             pstmt.executeUpdate();
+
+            // Retrieve the auto-generated key
+            try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getLong(1); // Return the generated article ID
+                } else {
+                    throw new SQLException("Failed to retrieve the generated article ID.");
+                }
+            }
         }
     }
 

@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import cse360Project.model.HelpArticle;
+import cse360Project.repository.GroupRepository;
 import cse360Project.repository.HelpArticleRepository;
 
 /*******
@@ -38,9 +39,11 @@ import cse360Project.repository.HelpArticleRepository;
 
 public class HelpArticleService {
     private final HelpArticleRepository articleRepo;
+    private final GroupRepository groupRepo;
 
-    public HelpArticleService(HelpArticleRepository articleRepo) {
+    public HelpArticleService(HelpArticleRepository articleRepo, GroupRepository groupRepo) {
         this.articleRepo = articleRepo;
+        this.groupRepo = groupRepo;
     }
 
     public void createNewArticle(HelpArticle article) {
@@ -174,7 +177,6 @@ public class HelpArticleService {
         TextField keywordsField = new TextField(); // Comma-separated keywords
         TextField linksField = new TextField(); // Comma-separated links
         TextField groupIdentifiersField = new TextField(); // Comma-separated group identifiers
-        CheckBox sensitiveCheckBox = new CheckBox("Is Sensitive");
 
         // Adding input fields to the grid
         gridPane.add(new Label("Level:"), 0, 0);
@@ -191,34 +193,15 @@ public class HelpArticleService {
         gridPane.add(linksField, 1, 5);
         gridPane.add(new Label("Group Identifiers (comma-separated):"), 0, 6);
         gridPane.add(groupIdentifiersField, 1, 6);
-        gridPane.add(sensitiveCheckBox, 1, 7);
 
         // Create button to save the article
         Button createButton = new Button("Create Article");
         createButton.setOnAction(e -> {
-            // Use a container (array) to hold mutable values
-            String[] safeTitle = {titleField.getText()}; // Mutable array for safeTitle
-            String[] safeDescription = {shortDescriptionField.getText()}; // Mutable array for safeDescription
-
-            // If sensitive, prompt for safeTitle and safeDescription
-            if (sensitiveCheckBox.isSelected()) {
-                TextInputDialog titleDialog = new TextInputDialog(safeTitle[0]);
-                titleDialog.setTitle("Sensitive Information");
-                titleDialog.setHeaderText("Enter Safe Title");
-                titleDialog.setContentText("Safe Title:");
-                titleDialog.showAndWait().ifPresent(input -> safeTitle[0] = input);
-
-                TextInputDialog descriptionDialog = new TextInputDialog(safeDescription[0]);
-                descriptionDialog.setTitle("Sensitive Information");
-                descriptionDialog.setHeaderText("Enter Safe Description");
-                descriptionDialog.setContentText("Safe Description:");
-                descriptionDialog.showAndWait().ifPresent(input -> safeDescription[0] = input);
-            }
-
             try {
+                // Create a new article object
                 HelpArticle article = new HelpArticle(
                         null, // ID will be auto-generated
-                        groupIdentifiersField.getText()+ ":" + levelField.getText() + ":" + titleField.getText(),
+                        groupIdentifiersField.getText() + ":" + levelField.getText() + ":" + titleField.getText(),
                         levelField.getText(),
                         titleField.getText(),
                         shortDescriptionField.getText(),
@@ -226,11 +209,20 @@ public class HelpArticleService {
                         bodyField.getText(),
                         List.of(linksField.getText().split(",")),
                         Set.of(groupIdentifiersField.getText().split(",")),
-                        sensitiveCheckBox.isSelected(),
-                        safeTitle[0], // Use the safe title input by the user
-                        safeDescription[0] // Use the safe description input by the user
+                        false,
+                        titleField.getText(), // Safe title
+                        shortDescriptionField.getText() // Safe description
                 );
-                articleRepo.createArticle(article);
+
+                // Save the article to the database
+                long articleId = articleRepo.createArticle(article);
+
+                // Add the article to the specified groups
+                String groupIdentifiers = groupIdentifiersField.getText();
+                if (groupIdentifiers != null && !groupIdentifiers.trim().isEmpty()) {
+                    addToGroups(articleId, groupIdentifiers); // Call the service to handle group relationships
+                }
+
                 createArticleStage.close(); // Close the form
             } catch (SQLException ex) {
                 ex.printStackTrace();
@@ -243,7 +235,21 @@ public class HelpArticleService {
         createArticleStage.setScene(scene);
         createArticleStage.show();
     }
+    
+	public void addToGroups(long articleId, String groupIdentifiers) throws SQLException {
+	    if (groupIdentifiers == null || groupIdentifiers.trim().isEmpty()) {
+	        throw new IllegalArgumentException("Group identifiers cannot be null or empty.");
+	    }
 
+	    String[] groups = groupIdentifiers.split(",");
+
+	    for (String groupName : groups) {
+	        groupName = groupName.trim(); // Clean up whitespace
+	        if (!groupName.isEmpty()) {
+	            groupRepo.addArticleToGroup(articleId, groupName); // Call the repository method
+	        }
+	    }
+	}
 
     public void deleteArticle(String articleHeader) {
         boolean deleted = articleRepo.deleteArticleByHeader(articleHeader);
