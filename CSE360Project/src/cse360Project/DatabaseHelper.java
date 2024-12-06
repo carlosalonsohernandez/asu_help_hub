@@ -163,7 +163,81 @@ class DatabaseHelper {
 	            + "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
 	            + ")";
 	    statement.execute(helpMessagesTable);
+
+		// Special Access Groups table
+		String specialAccessGroupsTable = "CREATE TABLE IF NOT EXISTS special_access_groups ("
+				+ "group_id BIGINT AUTO_INCREMENT PRIMARY KEY, "
+				+ "group_name VARCHAR(255) UNIQUE NOT NULL, "
+				+ "description TEXT NOT NULL)";
+		statement.execute(specialAccessGroupsTable);
+
+		// Group Articles table (encrypted body linked to special access groups)
+		String groupArticlesTable = "CREATE TABLE IF NOT EXISTS group_articles ("
+				+ "article_id BIGINT AUTO_INCREMENT PRIMARY KEY, "
+				+ "group_id BIGINT NOT NULL, "
+				+ "encrypted_body TEXT NOT NULL, "
+				+ "FOREIGN KEY (group_id) REFERENCES special_access_groups(group_id) ON DELETE CASCADE)";
+		statement.execute(groupArticlesTable);
+
+		// Special Access Group Admins table
+		String groupAdminsTable = "CREATE TABLE IF NOT EXISTS group_admins ("
+				+ "group_id BIGINT NOT NULL, "
+				+ "admin_id INT NOT NULL, "
+				+ "FOREIGN KEY (group_id) REFERENCES special_access_groups(group_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE, "
+				+ "PRIMARY KEY (group_id, admin_id))";
+		statement.execute(groupAdminsTable);
+
+		// Special Access Group Instructors table
+		String groupInstructorsTable = "CREATE TABLE IF NOT EXISTS group_instructors ("
+				+ "group_id BIGINT NOT NULL, "
+				+ "instructor_id INT NOT NULL, "
+				+ "has_view_rights BOOLEAN DEFAULT false, "
+				+ "has_admin_rights BOOLEAN DEFAULT false, "
+				+ "FOREIGN KEY (group_id) REFERENCES special_access_groups(group_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY (instructor_id) REFERENCES users(id) ON DELETE CASCADE, "
+				+ "PRIMARY KEY (group_id, instructor_id))";
+		statement.execute(groupInstructorsTable);
+
+		// Special Access Group Students table
+		String groupStudentsTable = "CREATE TABLE IF NOT EXISTS group_students ("
+				+ "group_id BIGINT NOT NULL, "
+				+ "student_id INT NOT NULL, "
+				+ "has_view_rights BOOLEAN DEFAULT false, "
+				+ "FOREIGN KEY (group_id) REFERENCES special_access_groups(group_id) ON DELETE CASCADE, "
+				+ "FOREIGN KEY (student_id) REFERENCES users(id) ON DELETE CASCADE, "
+				+ "PRIMARY KEY (group_id, student_id))";
+		statement.execute(groupStudentsTable);
+
+
+		createTriggerIfNotExists(connection);
 	}
+	
+    public void createTriggerIfNotExists(Connection connection) throws SQLException {
+        // Query to check if the trigger already exists
+        String checkTriggerQuery = "SELECT COUNT(*) FROM INFORMATION_SCHEMA.TRIGGERS WHERE TRIGGER_NAME = 'SET_FIRST_INSTRUCTOR_ADMIN_RIGHTS'";
+        
+        try (PreparedStatement checkStmt = connection.prepareStatement(checkTriggerQuery);
+             ResultSet rs = checkStmt.executeQuery()) {
+            
+            if (rs.next() && rs.getInt(1) > 0) {
+                System.out.println("Trigger 'SET_FIRST_INSTRUCTOR_ADMIN_RIGHTS' already exists. Skipping creation.");
+                return; // Trigger already exists; skip creation
+            }
+        }
+
+        // Create the trigger since it does not exist
+        String createTriggerQuery = "CREATE TRIGGER set_first_instructor_admin_rights "
+                + "AFTER INSERT ON group_instructors "
+                + "FOR EACH ROW "
+                + "CALL \"cse360Project.GroupInstructorTriggerHandler\"";
+
+        try (Statement stmt = connection.createStatement()) {
+            stmt.execute(createTriggerQuery);
+            System.out.println("Trigger 'SET_FIRST_INSTRUCTOR_ADMIN_RIGHTS' created successfully.");
+        }
+    }
+    
 	// insert default roles into roles table if not already there 
 	private void insertDefaultRoles() throws SQLException {
 	    // Insert Admin role if not exists

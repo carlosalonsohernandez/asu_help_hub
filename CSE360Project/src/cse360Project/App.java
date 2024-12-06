@@ -46,6 +46,7 @@ import cse360Project.repository.HelpArticleRepository;
 import cse360Project.repository.HelpMessageRepository;
 import cse360Project.repository.InvitationRepository;
 import cse360Project.repository.RoleRepository;
+import cse360Project.repository.SpecialAccessGroupRepository;
 import cse360Project.repository.UserRepository;
 import cse360Project.service.GroupService;
 import cse360Project.service.HelpArticleService;
@@ -81,6 +82,7 @@ public class App extends Application {
 	private static GroupRepository groupRepo = null;
 	private static HelpArticleRepository helpRepo = null;
 	private static HelpMessageRepository helpMessageRepo = null;
+	private static SpecialAccessGroupRepository spAccessRepo = null;
 	
 	
 	private static HelpArticleService helpService = null;
@@ -102,7 +104,7 @@ public class App extends Application {
         helpRepo = new HelpArticleRepository(databaseHelper.getConnection());
         helpMessageRepo = new HelpMessageRepository(databaseHelper.getConnection());
         groupRepo = new GroupRepository(databaseHelper.getConnection(), helpRepo);
-        
+        spAccessRepo = new SpecialAccessGroupRepository(databaseHelper.getConnection());        
         
         // establish services
         userService = new UserService(userRepo, roleRepo);
@@ -405,6 +407,8 @@ public class App extends Application {
          Button manageUsersButton = new Button("Manage Users");
          Button manageHelpArticlesButton = new Button("Manage Help Articles");
          Button showHelpMessagesButton = new Button("Show Help Messages");
+         Button manageGroupsButton = new Button("Manage General Groups");
+         Button manageSpGroupsButton = new Button("Manage Special Access Groups");
          
          logoutButton.setOnAction(e -> {
          	Session.getInstance().clear();
@@ -450,6 +454,27 @@ public class App extends Application {
 
             });
          
+         
+         manageGroupsButton.setOnAction(e -> {
+         	try {
+ 				showManageGroupsPage(stage);
+ 			} catch (Exception e1) {
+ 				// TODO Auto-generated catch block
+ 				e1.printStackTrace();
+ 			}
+
+         });
+         
+         manageSpGroupsButton.setOnAction(e -> {
+          	try {
+  				showManageSpecialAccessGroupsPage(stage);
+  			} catch (Exception e1) {
+  				// TODO Auto-generated catch block
+  				e1.printStackTrace();
+  			}
+
+          });
+         
          showHelpMessagesButton.setOnAction(e-> {
         	try {
         		showHelpMessagesPage(stage);
@@ -465,8 +490,10 @@ public class App extends Application {
          gridPane.add(generateInviteButton, 0, 2);
          gridPane.add(manageUsersButton, 0, 3);
          gridPane.add(manageHelpArticlesButton, 0, 4);
-         gridPane.add(showHelpMessagesButton, 0, 5);
-         gridPane.add(logoutButton, 0, 6);
+         gridPane.add(manageGroupsButton, 0, 5);
+         gridPane.add(manageSpGroupsButton, 0, 6);
+         gridPane.add(showHelpMessagesButton, 0, 7);
+         gridPane.add(logoutButton, 0, 8);
 
          ScrollPane scrollPane = new ScrollPane();
          scrollPane.setContent(gridPane);
@@ -1553,6 +1580,17 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
 			}
 
         });
+        
+        Button manageSpGroupsButton = new Button("Manage Special Access Groups");
+        manageSpGroupsButton.setOnAction(e -> {
+        	try {
+        		showManageSpecialAccessGroupsPage(stage);
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+
+        });
 
         // logout 
         Button logoutButton = new Button("Logout");
@@ -1743,7 +1781,7 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         // Create Group button
         Button createGroupButton = new Button("Create Group");
         createGroupButton.setOnAction(e -> {
-            System.out.println("Create");
+            System.out.println("Created a Group");
             // You can later implement functionality to show a form for creating a group
         });
         gridPane.add(createGroupButton, 0, 2);
@@ -1753,7 +1791,7 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
         updateGroupButton.setOnAction(e -> {
             List<String> selectedGroup = tableView.getSelectionModel().getSelectedItem();
             if (selectedGroup != null) {
-                System.out.println("Update");
+                System.out.println("Updated a Group");
                 // You can later implement functionality to show a form for updating a group
             } else {
                 System.out.println("No group selected for update.");
@@ -1802,6 +1840,111 @@ helpService.loadArticlesIntoTable(tableView, selectedGroups);
 
         // Set the Scene and show the Stage
         Scene scene = new Scene(gridPane, 600, 400);
+        stage.setScene(scene);
+    }
+    
+    public void showManageSpecialAccessGroupsPage(Stage stage) {
+        stage.setTitle("Manage Special Access Groups");
+
+        // Create GridPane layout
+        GridPane gridPane = new GridPane();
+        gridPane.setPadding(new Insets(10));
+        gridPane.setHgap(10);
+        gridPane.setVgap(10);
+
+        // Label for page title
+        Label titleLabel = new Label("Manage Special Access Groups");
+        gridPane.add(titleLabel, 0, 0, 2, 1); // Span two columns
+
+        // Table to display special access groups
+        TableView<List<String>> tableView = new TableView<>();
+
+        // Define the columns for group details
+        TableColumn<List<String>, String> groupIdCol = new TableColumn<>("Group ID");
+        groupIdCol.setCellValueFactory(cellData -> {
+            List<String> row = cellData.getValue();
+            return row.size() > 0 ? new SimpleStringProperty(row.get(0)) : new SimpleStringProperty("");
+        });
+
+        TableColumn<List<String>, String> groupNameCol = new TableColumn<>("Group Name");
+        groupNameCol.setCellValueFactory(cellData -> {
+            List<String> row = cellData.getValue();
+            return row.size() > 1 ? new SimpleStringProperty(row.get(1)) : new SimpleStringProperty("");
+        });
+
+        TableColumn<List<String>, String> groupDescriptionCol = new TableColumn<>("Description");
+        groupDescriptionCol.setCellValueFactory(cellData -> {
+            List<String> row = cellData.getValue();
+            return row.size() > 2 ? new SimpleStringProperty(row.get(2)) : new SimpleStringProperty("");
+        });
+
+        // Add the columns to the table
+        tableView.getColumns().addAll(groupIdCol, groupNameCol, groupDescriptionCol);
+
+        // Load groups into the table
+        gridPane.add(tableView, 0, 1, 3, 1); // Span three columns
+
+        // Create Group button
+        Button createGroupButton = new Button("Create Group");
+        createGroupButton.setOnAction(e -> {
+            System.out.println("Create Special Access Group");
+            // Implement functionality to show a form for creating a special access group
+        });
+        gridPane.add(createGroupButton, 0, 2);
+
+        // Update Group button
+        Button updateGroupButton = new Button("Update Group");
+        updateGroupButton.setOnAction(e -> {
+            List<String> selectedGroup = tableView.getSelectionModel().getSelectedItem();
+            if (selectedGroup != null) {
+                System.out.println("Update Special Access Group");
+                // Implement functionality to show a form for updating a special access group
+            } else {
+                System.out.println("No group selected for update.");
+            }
+        });
+        gridPane.add(updateGroupButton, 1, 2);
+
+        // Delete Group button
+        Button deleteGroupButton = new Button("Delete Group");
+        deleteGroupButton.setOnAction(e -> {
+            List<String> selectedGroup = tableView.getSelectionModel().getSelectedItem();
+            if (selectedGroup != null) {
+                System.out.println("Delete Special Access Group");
+                // Implement functionality for deleting a special access group
+            } else {
+                System.out.println("No group selected for deletion.");
+            }
+        });
+        gridPane.add(deleteGroupButton, 2, 2);
+
+        // Refresh button
+        Button refreshButton = new Button("Refresh");
+        refreshButton.setOnAction(e -> {
+        });
+        gridPane.add(refreshButton, 0, 3);
+
+        // Back button
+        Button backButton = new Button("Back");
+        backButton.setOnAction(e -> {
+            showAdminHomePage(stage); // Navigate back to admin home
+        });
+        gridPane.add(backButton, 1, 3);
+
+        // Logout button
+        Button logoutButton = new Button("Logout");
+        logoutButton.setOnAction(e -> {
+            Session.getInstance().clear();
+            try {
+                start(stage); // Redirect to login page
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+        gridPane.add(logoutButton, 2, 3);
+
+        // Set the Scene and show the Stage
+        Scene scene = new Scene(gridPane, 800, 500); // Adjust size as needed
         stage.setScene(scene);
     }
     
